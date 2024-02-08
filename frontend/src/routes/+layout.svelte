@@ -1,44 +1,52 @@
 <script lang="ts">
 	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, LightSwitch } from '@skeletonlabs/skeleton';
+	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
+	import { storePopup } from '@skeletonlabs/skeleton';
+	// @ts-expect-error no type definitions available for this package
+	import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
+	import { config } from '@fortawesome/fontawesome-svg-core';
+	import '@fortawesome/fontawesome-svg-core/styles.css';
+	import { faBars } from '@fortawesome/free-solid-svg-icons';
+	import AvatarButton from '$lib/components/AvatarButton.svelte';
+	import { sideMenuStore } from '$lib/stores/sideMenuStore';
+
+	// for fontawesome
+	config.autoAddCss = false;
+
+	// for popups
+	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
+
+
+	let hasMobileSideMenu: boolean;
+	sideMenuStore.subscribe(({ hasSideMenu }) => {
+		hasMobileSideMenu = hasSideMenu;
+	});
 </script>
 
 <!-- App Shell -->
 <AppShell>
-	<svelte:fragment slot="header">
-		<!-- App Bar -->
-		<AppBar>
-			<svelte:fragment slot="lead">
-				<strong class="text-xl uppercase">Skeleton</strong>
-			</svelte:fragment>
-			<svelte:fragment slot="trail">
-				<a
-					class="btn btn-sm variant-ghost-surface"
-					href="https://discord.gg/EXqV7W8MtY"
-					target="_blank"
-					rel="noreferrer"
+	<AppBar slot="header" shadow="shadow-lg">
+		<div slot="lead" class="flex items-center gap-4">
+			{#if hasMobileSideMenu}
+				<button
+					type="button"
+					class="pt-1"
+					on:click={sideMenuStore.toggleOpen}
 				>
-					Discord
-				</a>
-				<a
-					class="btn btn-sm variant-ghost-surface"
-					href="https://twitter.com/SkeletonUI"
-					target="_blank"
-					rel="noreferrer"
-				>
-					Twitter
-				</a>
-				<a
-					class="btn btn-sm variant-ghost-surface"
-					href="https://github.com/skeletonlabs/skeleton"
-					target="_blank"
-					rel="noreferrer"
-				>
-					GitHub
-				</a>
-			</svelte:fragment>
-		</AppBar>
-	</svelte:fragment>
+					<FontAwesomeIcon
+						icon={faBars}
+						class="text-xl lg:!hidden cursor-pointer"
+					/>
+				</button>
+			{/if}
+			<strong class="text-xl uppercase select-none">S-bot-ify</strong>
+		</div>
+		<svelte:fragment slot="trail">
+			<LightSwitch />
+			<AvatarButton />
+		</svelte:fragment>
+	</AppBar>
 	<!-- Page Route Content -->
 	<slot />
 </AppShell>
