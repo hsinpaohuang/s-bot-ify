@@ -1,0 +1,18 @@
+FROM oven/bun:1
+
+ENV API_HOST=localhost \
+  API_PORT=8000
+
+EXPOSE 5173 4713
+
+WORKDIR /code
+
+COPY frontend/package.json frontend/bun.lockb /code/
+
+RUN bun install
+
+COPY . .
+
+WORKDIR /code/frontend
+
+CMD bun dev --host 0.0.0.0
