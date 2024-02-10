@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "backend"
+version = "0.1.0"
+description = ""
+authors = ["hsinpaohuang <hsinpaohuang@gmail.com>"]
+readme = "README.md"
+
+[tool.taskipy.tasks]
+dev = "uvicorn backend.main:app --host 0.0.0.0 --reload"
+prod = "uvicorn backend.main:app --host 0.0.0.0"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.109.2"
+uvicorn = {extras = ["standard"], version = "^0.27.0.post1"}
+
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.12.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

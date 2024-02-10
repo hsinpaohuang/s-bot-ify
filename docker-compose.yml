@@ -1,0 +1,12 @@
+version: '3'
+services:
+  dev-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      ENV: dev
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/code
