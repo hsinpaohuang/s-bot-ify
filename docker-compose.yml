@@ -6,6 +6,13 @@ services:
       dockerfile: backend/Dockerfile.dev
     ports:
       - 8000:8000
+    env_file: backend/.env.dev
+    secrets:
+      - db_root_username
+      - db_root_password
+      - spotify_client_secret
+      - spotify_jwt_secret
+      - spotify_oauth_state
     volumes:
       - ./:/code
   frontend-dev-server:
@@ -15,5 +22,37 @@ services:
     ports:
       - 5173:5173
       - 4173:4173
+    secrets:
+      - .env.development
     volumes:
       - ./:/code
+  dev-db:
+    image: mongo:7.0.5-jammy
+    ports:
+      - 27071:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/db_root_username
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+    secrets:
+      - db_root_username
+      - db_root_password
+    volumes:
+      - dev-db:/data/db
+    command: [--auth]
+
+secrets:
+  .env.development:
+    file: frontend/secrets.dev
+  db_root_username:
+    file: backend/secrets/db_root_username
+  db_root_password:
+    file: backend/secrets/db_root_password
+  spotify_client_secret:
+    file: backend/secrets/spotify_client_secret
+  spotify_jwt_secret:
+    file: backend/secrets/spotify_jwt_secret
+  spotify_oauth_state:
+    file: backend/secrets/spotify_oauth_state
+
+volumes:
+  dev-db:

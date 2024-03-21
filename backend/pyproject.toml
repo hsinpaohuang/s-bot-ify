@@ -4,15 +4,20 @@ version = "0.1.0"
 description = ""
 authors = ["hsinpaohuang <hsinpaohuang@gmail.com>"]
 readme = "README.md"
+packages = [{ include = "**/*" }]
 
 [tool.taskipy.tasks]
-dev = "uvicorn backend.main:app --host 0.0.0.0 --reload"
-prod = "uvicorn backend.main:app --host 0.0.0.0"
+dev = "cd /code/backend/backend; uvicorn main:app --host 0.0.0.0 --reload --reload-include /code/backend"
+prod = "cd /code/backend/backend; uvicorn main:app"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = "^0.109.2"
 uvicorn = {extras = ["standard"], version = "^0.27.0.post1"}
+beanie = "^1.25.0"
+aiohttp = "^3.9.3"
+pydantic-settings = "^2.1.0"
+fastapi-users = {extras = ["beanie", "oauth"], version = "^13.0.0"}
 
 
 [tool.poetry.group.dev.dependencies]

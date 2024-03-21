@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.postcss';
-	import { AppShell, AppBar, LightSwitch } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, LightSwitch, Toast, initializeStores } from '@skeletonlabs/skeleton';
 	import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
 	import { storePopup } from '@skeletonlabs/skeleton';
 	// @ts-expect-error no type definitions available for this package
@@ -14,7 +14,8 @@
 	// for fontawesome
 	config.autoAddCss = false;
 
-	// for popups
+	// skeleton setups
+	initializeStores();
 	storePopup.set({ computePosition, autoUpdate, offset, shift, flip, arrow });
 
 
@@ -23,6 +24,8 @@
 		hasMobileSideMenu = hasSideMenu;
 	});
 </script>
+
+<Toast />
 
 <!-- App Shell -->
 <AppShell>
