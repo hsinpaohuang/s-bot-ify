@@ -1,54 +1,74 @@
-import { get, readonly, writable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
+import { browser } from '$app/environment';
 import { PUBLIC_API_URL } from "$env/static/public";
+import { camelizedFetch } from "$lib/utils/fetchWrappers";
+
+type State = {
+  accessToken?: string;
+  tokenType?: string;
+};
 
 class AuthStore {
-  set;
-  store;
-  private _store;
+  isLoggedInStore;
+
+  private store;
+  private SESSION_STORAGE_KEY = 'auth';
 
   constructor() {
-    this._store = writable({ accessToken: '', tokenType: '' });
-    this.store = readonly(this._store);
-    this.set = this._store.set;
+    this.store = writable(this.storedState);
+    this.isLoggedInStore = derived(this.store, store =>
+      Boolean(store.accessToken),
+    );
   }
 
   get accessToken() {
-    return get(this._store).accessToken;
+    return get(this.store).accessToken;
   }
 
   get tokenType() {
-    return get(this._store).tokenType;
+    return get(this.store).tokenType;
+  }
+
+  get isLoggedIn() {
+    return get(this.isLoggedInStore);
+  }
+
+  private get storedState(): State {
+    if (!browser) {
+      return {};
+    }
+
+    const stored = sessionStorage.getItem(this.SESSION_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
   }
 
   async getAuthURL() {
-   const url = await fetch(`${PUBLIC_API_URL}/auth/spotify/authorize`);
-    const { authorization_url: authURL }: { authorization_url: string }
-      = await url.json();
+    const { ok, data } = await camelizedFetch<{ authorizationUrl: string }>(
+      `${PUBLIC_API_URL}/auth/spotify/authorize`,
+    );
 
-    return authURL;
+    if (!ok || !data?.authorizationUrl) {
+      throw new Error(`Failed to fetch authURL`);
+    }
+
+    return data.authorizationUrl;
   }
 
   async getToken() {
-    const registerResponse = await fetch(
+    const { ok, data } = await camelizedFetch<State, { detail: string }>(
       window.location.href.replace(window.location.origin, PUBLIC_API_URL),
     )
 
-    const registerData = await registerResponse.json();
-
-    if (!registerResponse.ok) {
-      const { detail }: { detail: string } = registerData;
-      throw new Error(`Failed to fetch token`, { cause: detail });
+    if (!ok) {
+      throw new Error(`Failed to fetch token`, { cause: data?.detail });
     }
 
-    const {
-      access_token: accessToken,
-      token_type: tokenType
-    }: {
-      access_token: string;
-      token_type: string
-    } = registerData;
+    if (!data) {
+      throw new Error('Invalid API response');
+    }
 
-    this.set({ accessToken, tokenType });
+    sessionStorage.setItem(this.SESSION_STORAGE_KEY, JSON.stringify(data));
+    this.store.set(data);
   }
 }
 
