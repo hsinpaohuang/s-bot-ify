@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { PopupSettings } from '@skeletonlabs/skeleton';
-  // @ts-expect-error no type definitions available for this package
   import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
   import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
   import { page } from '$app/stores';

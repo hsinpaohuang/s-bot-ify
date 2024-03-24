@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Avatar, type PopupSettings } from "@skeletonlabs/skeleton";
-  // @ts-expect-error no type definitions available for this package
   import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
   import { faArrowRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 	import Popup from "$lib/components/Popup.svelte";
