@@ -14,7 +14,7 @@ plugin({
       loader: 'object',
     }));
     build.module('$env/static/public', () => ({
-      exports: { PUBLIC_API_URL: 'url' },
+      exports: { PUBLIC_API_URL: 'https://PUBLIC_API_URL.com' },
       loader: 'object',
     }));
   },

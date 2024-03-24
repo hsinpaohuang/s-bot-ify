@@ -4,12 +4,15 @@ from fastapi.staticfiles import StaticFiles
 from utils.env import settings
 
 from routes.spotify_auth import spotify_oauth_router
+from routes.user_info import router as user_info_router
+
+_routers = [user_info_router]
 
 def setup_routers(app: FastAPI):
     setup_oauth_routers(app)
 
-    # for router in _routers:
-    #     app.include_router(router)
+    for router in _routers:
+        app.include_router(router, prefix='/api')
 
     if settings.fast_api_mode == 'PROD':
         app.mount('/{full_path:path}', StaticFiles(directory='static'), name='static')

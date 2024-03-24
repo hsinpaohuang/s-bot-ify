@@ -49,14 +49,35 @@ describe('fetchWrappers', () => {
     it('passes params to fetch correctly', async () => {
       const result = await subjects.camelizedFetch('test', { method: 'post' });
 
-      expect(fetch).toHaveBeenCalledTimes(1);
-      expect(fetch).toHaveBeenCalledWith('test', { method: 'post' });
+      expect(mockedFetch).toHaveBeenCalledTimes(1);
+      expect(mockedFetch).toHaveBeenCalledWith('test', { method: 'post' });
       expect(result).toHaveProperty('data', mockedFetchResponseData);
     });
   });
 
   describe('authedFetch', async () => {
     const mockedGoto = mock();
+
+    async function mockAuthStore() {
+      await mock.module('$lib/stores/authStore', () => ({
+        authStore: {
+          isLoggedIn: true,
+          accessToken: 'access_token',
+          tokenType: 'token_type'
+        },
+      }));
+    }
+
+    // mocking this in beforeAll causes other tests to be affected
+    function mockCamelizedFetch() {
+      return spyOn(subjects, 'camelizedFetch')
+        .mockImplementation(
+          // @ts-expect-error mocking relevant properties only
+          () => Promise.resolve({ data: mockedFetchResponseData }),
+        );
+    }
+
+    const options = { headers: { Authorization: 'token_type access_token' } };
 
     beforeAll(async () => {
       mock.module('$app/navigation', () => ({ goto: mockedGoto }));
@@ -77,32 +98,49 @@ describe('fetchWrappers', () => {
       expect(mockedGoto).toHaveBeenCalledWith('/login');
     });
 
-    it('adds auth headers and calls camelizedFetch', async () => {
-      await mock.module('$lib/stores/authStore', () => ({
-        authStore: {
-          isLoggedIn: true,
-          accessToken: 'access_token',
-          tokenType: 'token_type'
-        },
-      }));
+    it('correctly processes path params', async () => {
+      await mockAuthStore();
+      const mockedCamelizedFetch = mockCamelizedFetch();
 
-      const mockedCamelizedFetch = spyOn(subjects, 'camelizedFetch')
-        .mockImplementation(
-          // @ts-expect-error mocking relevant properties only
-          () => Promise.resolve({ data: mockedFetchResponseData }),
-        );
+      subjects.authedFetch('/pathWithSlash');
+      subjects.authedFetch('pathWithoutSlash');
+      subjects.authedFetch('https://PUBLIC_API_URL.com/api/fullURL');
+
+      expect(mockedCamelizedFetch).toHaveBeenCalledTimes(3);
+      expect(mockedCamelizedFetch).toHaveBeenNthCalledWith(
+        1,
+        'https://PUBLIC_API_URL.com/api/pathWithSlash',
+        options,
+      );
+      expect(mockedCamelizedFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://PUBLIC_API_URL.com/api/pathWithoutSlash',
+        options,
+      );
+      expect(mockedCamelizedFetch).toHaveBeenNthCalledWith(
+        3,
+        'https://PUBLIC_API_URL.com/api/fullURL',
+        options,
+      );
+
+      mockedCamelizedFetch.mockRestore();
+    });
+
+    it('adds auth headers and calls camelizedFetch', async () => {
+      await mockAuthStore();
+      const mockedCamelizedFetch = mockCamelizedFetch();
 
       const res = await subjects.authedFetch('test', { method: 'POST' });
 
       expect(mockedGoto).not.toHaveBeenCalled();
+      expect(mockedCamelizedFetch).toHaveBeenCalledTimes(1);
       expect(mockedCamelizedFetch).toHaveBeenCalledWith(
-        'test',
-        {
-          method: 'POST',
-          headers: { Authorization: 'token_type access_token' },
-        },
+        'https://PUBLIC_API_URL.com/api/test',
+        { method: 'POST', ...options },
       );
       expect(res).toHaveProperty('data', mockedFetchResponseData);
+
+      mockedCamelizedFetch.mockRestore();
     });
   });
 });

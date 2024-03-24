@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { PUBLIC_API_URL } from "$env/static/public";
 import { authStore } from "$lib/stores/authStore";
 import { recursivelyCamelize } from "$lib/utils/caseConversion";
 
@@ -35,18 +36,19 @@ export async function camelizedFetch<S, F = undefined>(
 }
 
 /**
- * Wrapper for `camelizedFetch`, but automatically adds authorization header.
+ * Wrapper for `camelizedFetch`, but automatically adds authorization header,
+ * and also does not require API endpoint origin
  *
  * Will redirect current page to `/login` if access token is missing
  *
- * @param url URL string
+ * @param path path, which will be concatenated to `PUBLIC_API_URL/api/`
  * @param options same as default fetch
  * @returns Same as from `camelizedFetch`
  *
  * @see camelizedFetch
  */
 export async function authedFetch<S, F = undefined>(
-  url: string | URL | Request,
+  path: string,
   options?: FetchRequestInit,
 ): Promise<
   ResponseWithSuccessData<S>
@@ -59,6 +61,10 @@ export async function authedFetch<S, F = undefined>(
     await goto('/login');
     return;
   }
+
+  const url = path.startsWith(PUBLIC_API_URL)
+    ? path
+    : `${PUBLIC_API_URL}/api/${path.startsWith('/') ? path.slice(1) : path}`;
 
   const headers = Object.assign(
     { Authorization: `${tokenType} ${accessToken}` },

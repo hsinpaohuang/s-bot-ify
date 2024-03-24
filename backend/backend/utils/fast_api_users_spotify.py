@@ -40,7 +40,7 @@ class _UserManager(ObjectIDIDMixin, BaseUserManager[UserEntity, PydanticObjectId
 async def _get_user_db(): # pyright:ignore
     yield BeanieUserDatabase(UserEntity, OAuthAccount) # pyright:ignore
 
-async def __get_user_manager(
+async def _get_user_manager(
     user_db: BeanieUserDatabase[UserEntity] = Depends(_get_user_db) # pyright:ignore
 ):
     yield _UserManager(user_db)
@@ -55,6 +55,6 @@ auth_backend = AuthenticationBackend(
 )
 
 fastapi_users = FastAPIUsers[UserEntity, PydanticObjectId](
-    get_user_manager=__get_user_manager,
+    get_user_manager=_get_user_manager,
     auth_backends=[auth_backend],
 )

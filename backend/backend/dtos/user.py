@@ -1,7 +1,6 @@
 from typing import TypedDict
 from math import inf
-from pydantic import BaseModel
-# from entities.user import UserEntity
+from pydantic import BaseModel, computed_field
 
 UserProfilePict = TypedDict('UserProfilePict', {
     'url': str,
@@ -15,17 +14,9 @@ class SpotifyUser(BaseModel):
     display_name: str
     email: str
 
-    # @property
-    # def as_user_entity(self):
-    #     return UserEntity(
-    #         spotify_id=self.id,
-    #         avatar=self._avatar,
-    #         name=self.display_name,
-    #         email=self.email,
-    #     )
-
+    @computed_field
     @property
-    def _avatar(self):
+    def avatar(self) -> str | None:
         if len(self.images) == 0:
             return None
 
@@ -37,3 +28,12 @@ class SpotifyUser(BaseModel):
 
         return self.images[index]['url']
 
+    @property
+    def as_user_info(self):
+        return UserInfo.model_validate(
+            self.model_dump(include={ 'avatar', 'display_name' }),
+        )
+
+class UserInfo(BaseModel):
+    avatar: str | None
+    display_name: str

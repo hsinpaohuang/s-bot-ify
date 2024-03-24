@@ -1,5 +1,5 @@
-from typing import cast
-from dtos.spotify_user import SpotifyUser
+from typing import cast, overload
+from dtos.user import SpotifyUser
 from entities.base_entity import BaseEntity
 from use_cases.base_use_case import BaseUseCase
 from repositories.base_repository import BaseReadOnlyRepository
@@ -10,5 +10,10 @@ class GetSpotifyUserUseCase[T: BaseEntity](BaseUseCase):
     def __init__(self, repo: BaseReadOnlyRepository[T]):
         self._repo = repo
 
-    async def execute(self, auth_token: str):
-        return cast(SpotifyUser, await self._repo.get(auth_token))
+    @overload
+    async def execute(self, input: BaseEntity) -> SpotifyUser: ...
+    @overload
+    async def execute(self, input: str) -> SpotifyUser: ...
+
+    async def execute(self, input: BaseEntity | str) -> SpotifyUser:
+        return cast(SpotifyUser, await self._repo.get(input))
