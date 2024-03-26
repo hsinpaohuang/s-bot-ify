@@ -1,39 +1,17 @@
-from typing import TypedDict
-from math import inf
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field
+from dtos.image import SpotifyImages
 
-UserProfilePict = TypedDict('UserProfilePict', {
-    'url': str,
-    'height': int,
-    'width': int,
-})
-
-class SpotifyUser(BaseModel):
+class SpotifyUser(SpotifyImages, BaseModel):
     id: str
-    images: list[UserProfilePict]
     display_name: str
     email: str
-
-    @computed_field
-    @property
-    def avatar(self) -> str | None:
-        if len(self.images) == 0:
-            return None
-
-        index = 0
-        min_size = inf
-        for i, image in enumerate(self.images):
-            if image['width'] < min_size:
-                index = i
-
-        return self.images[index]['url']
 
     @property
     def as_user_info(self):
         return UserInfo.model_validate(
-            self.model_dump(include={ 'avatar', 'display_name' }),
+            self.model_dump(include={ 'icon', 'display_name' }),
         )
 
 class UserInfo(BaseModel):
-    avatar: str | None
+    icon: str | None = Field(...)
     display_name: str

@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import { PUBLIC_API_URL } from "$env/static/public";
 import { authStore } from "$lib/stores/authStore";
 import { recursivelyCamelize } from "$lib/utils/caseConversion";
+import { HTTPStatusCode } from "$lib/utils/httpStatusCode";
 
 type ResponseWithData<T> = Omit<
   Response & { data?: T },
@@ -71,5 +72,12 @@ export async function authedFetch<S, F = undefined>(
     options?.headers,
   );
 
-  return await camelizedFetch(url, { ...options, headers });
+  const res = await camelizedFetch<S, F>(url, { ...options, headers });
+
+  if (res && res.status === HTTPStatusCode.Unauthorized) {
+    await goto('/login');
+    return;
+  }
+
+  return res;
 }

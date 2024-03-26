@@ -1,56 +1,54 @@
-import { sleep } from "$lib/utils/sleep";
-import { writable } from "svelte/store";
+import { authedFetch } from "$lib/utils/fetchWrappers";
+import { get, writable } from "svelte/store";
 
 export type Playlist = {
   id: string;
-  title: string;
-  icon: string;
+  name: string;
+  icon: string | null;
 }
 
-export const fakePlaylists: Playlist[] = [
-  {
-    id: '1',
-    icon: '(icon)',
-    title: 'Tile 1',
-  },
-  {
-    id: '2',
-    icon: '(icon)',
-    title: 'Tile 2',
-  },
-  {
-    id: '3',
-    icon: '(icon)',
-    title: 'Tile 3',
-  },
-  {
-    id: '4',
-    icon: '(icon)',
-    title: 'Tile 4',
-  },
-  {
-    id: '5',
-    icon: '(icon)',
-    title: 'Tile 5',
-  },
-];
+type GetPlaylistResponse = {
+  hasMore: boolean;
+  offset: number;
+  playlists: Playlist[];
+}
 
 class PlaylistsStore {
-  private set;
-
   subscribe;
+  hasMore = true;
+
+  private store;
+  private offset = 0;
 
   constructor() {
-    const { subscribe, set } = writable<Playlist[]>([]);
-    this.subscribe = subscribe;
-    this.set = set;
+    this.store = writable<Playlist[]>([]);
+    this.subscribe = this.store.subscribe;
   }
 
-  async fetchPlaylists() {
-    await sleep(1000);
+  private get length() {
+    return get(this.store).length;
+  }
 
-    // TODO: replace with real playlists
-    this.set(fakePlaylists);
+  async fetchNext() {
+    if (!this.hasMore) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (this.length) {
+      params.append('offset', String(this.offset + this.length));
+    }
+
+    const res = await authedFetch<GetPlaylistResponse>(`/playlists?${params}`);
+    if (!res || !res.ok || !res.data) {
+      throw new Error('Failed to fetch playlists');
+    }
+
+    const { hasMore, offset, playlists } = res.data;
+
+    this.hasMore = hasMore;
+    this.offset = offset;
+    this.store.update(state => state.concat(playlists));
   }
 }
 

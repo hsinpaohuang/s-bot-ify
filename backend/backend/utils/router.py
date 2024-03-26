@@ -5,8 +5,9 @@ from utils.env import settings
 
 from routes.spotify_auth import spotify_oauth_router
 from routes.user_info import router as user_info_router
+from routes.playlist import router as playlist_router
 
-_routers = [user_info_router]
+_routers = [user_info_router, playlist_router]
 
 def setup_routers(app: FastAPI):
     setup_oauth_routers(app)
@@ -16,7 +17,6 @@ def setup_routers(app: FastAPI):
 
     if settings.fast_api_mode == 'PROD':
         app.mount('/{full_path:path}', StaticFiles(directory='static'), name='static')
-        pass
     elif settings.fast_api_mode == 'DEV':
         @app.get('/{full_path:path}', response_class=RedirectResponse)
         def redirect_to_frontend(full_path: str): #pyright: ignore

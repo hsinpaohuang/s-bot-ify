@@ -27,6 +27,7 @@ class SpotifyAPI():
             self,
             path: str,
             result_model: Type[T],
+            params: dict[str, str] | None = None,
             check_token: bool=True
         ) -> T:
         is_token_checked = False
@@ -40,6 +41,7 @@ class SpotifyAPI():
         async with session.get(
             f'{self._SPOTIFY_API_V1_URL}/{parsed_path}',
             headers=self._header,
+            params=params,
         ) as resp:
             result = await resp.json()
 

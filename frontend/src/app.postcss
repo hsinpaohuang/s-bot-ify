@@ -17,3 +17,12 @@ body {
 .apa {
 	@apply opacity-80 animate-pulse;
 }
+
+/* reference: https://www.w3schools.com/howto/howto_css_hide_scrollbars.asp */
+.no-scrollbar {
+	-ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+	&::-webkit-scrollbar {
+		display: none; /* Chrome, Safari and Opera */
+	}
+}

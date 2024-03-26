@@ -39,11 +39,16 @@
     type="button"
     class="btn-icon"
   >
-    <Avatar src={userInfo.avatar} {initials} rounded="rounded-xl" />
+    <Avatar src={userInfo.icon ?? undefined} {initials} rounded="rounded-xl" />
 
     <ul class="list flex flex-col gap-1" slot="popup-card">
       <li class="flex">
-        <Avatar src={userInfo.avatar} {initials} width="w-8" rounded="rounded-lg" />
+        <Avatar
+          src={userInfo.icon ?? undefined}
+          {initials}
+          width="w-8"
+          rounded="rounded-lg"
+        />
         <span>
           {userInfo.displayName}
         </span>

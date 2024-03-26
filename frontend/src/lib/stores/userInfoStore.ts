@@ -2,7 +2,7 @@ import { authedFetch } from "$lib/utils/fetchWrappers";
 import { writable } from "svelte/store";
 
 export type UserInfo = {
-  avatar?: string;
+  icon: string | null;
   displayName: string;
 }
 
@@ -12,7 +12,7 @@ class UserInfoStore {
   private store;
 
   constructor() {
-    this.store = writable<UserInfo>({ displayName: '' });
+    this.store = writable<UserInfo>({ displayName: '', icon: null });
     this.subscribe = this.store.subscribe;
   }
 

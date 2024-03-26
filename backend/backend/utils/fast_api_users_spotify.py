@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable, cast
 from fastapi import Request, Depends
 from beanie import PydanticObjectId
 from httpx_oauth.oauth2 import OAuth2
@@ -30,7 +30,7 @@ oauth_client = _SpotifyOAuth(
      authorize_endpoint='https://accounts.spotify.com/authorize',
      access_token_endpoint='https://accounts.spotify.com/api/token',
      refresh_token_endpoint='https://accounts.spotify.com/api/token',
-     base_scopes=['user-read-email'],
+     base_scopes=['user-read-email', 'playlist-read-private'],
 )
 
 class _UserManager(ObjectIDIDMixin, BaseUserManager[UserEntity, PydanticObjectId]):
@@ -50,11 +50,16 @@ auth_backend = AuthenticationBackend(
     transport=BearerTransport(tokenUrl="auth/jwt/login"),
     get_strategy=lambda: JWTStrategy(
         secret=settings.spotify_jwt_secret,
-        lifetime_seconds=3600
+        lifetime_seconds=None if settings.fast_api_mode == 'DEV' else 3600,
     ), # pyright:ignore
 )
 
 fastapi_users = FastAPIUsers[UserEntity, PydanticObjectId](
     get_user_manager=_get_user_manager,
     auth_backends=[auth_backend],
+)
+
+current_active_user = cast(
+    Callable[[], UserEntity],
+    fastapi_users.current_user(active=True),
 )

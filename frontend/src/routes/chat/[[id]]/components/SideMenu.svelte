@@ -7,6 +7,7 @@
   import { sideMenuStore } from "$lib/stores/sideMenuStore";
 	import PlaylistMenu from "./PlaylistMenu.svelte";
 	import { playlistsStore, type Playlist, placeholders } from "../stores/playlistsStore";
+	import { intersectionObserver } from "$lib/utils/intersectionObserverAction";
 
   sideMenuStore.setHasSideMenu(true);
   onDestroy(() => {
@@ -17,11 +18,12 @@
     sideMenuStore.setIsOpen(!nav.to?.params?.id);
   });
 
-  $: fetching = playlistsStore.fetchPlaylists();
+  let hasMore = true;
 
   let playlists: Playlist[];
   playlistsStore.subscribe(state => {
     playlists = state;
+    hasMore = playlistsStore.hasMore;
   });
 
   $: selectedPlaylist = playlists.find(({ id }) => id === $page.params.id);
@@ -33,43 +35,68 @@
       placement: 'right',
     };
   }
+
+  async function fetchNext(e: CustomEvent<boolean>) {
+    if (!e.detail) {
+      return;
+    }
+
+    await playlistsStore.fetchNext();
+  }
 </script>
 
 <aside class="flex h-full w-screen lg:w-auto shadow-[7px_0_15px_0_rgb(0,0,0,0.12)]">
-  <AppRail width="w-16" class="pt-4 z-10 shadow-[7px_0_15px_0_rgb(0,0,0,0.12)]">
-    {#await fetching}
-      {#each placeholders as _}
-        <AppRailAnchor>
-          <div class="flex justify-center">
-            <Avatar
-              initials=" "
-              width="w-12"
-              rounded="rounded-xl"
-              class="apa"
-            />
-          </div>
-        </AppRailAnchor>
-      {/each}
-    {:then}
-      {#each playlists as playlist}
-        <AppRailAnchor
-          href="/chat/{playlist.id}"
-          selected={$page.url.pathname === `/chat/${playlist.id}`}
+  <AppRail
+    width="w-16"
+    height="h-auto"
+    class="no-scrollbar pt-4 z-10 shadow-[7px_0_15px_0_rgb(0,0,0,0.12)]"
+    regionDefault="flex flex-col"
+  >
+    {#each playlists as playlist}
+      <AppRailAnchor
+        href="/chat/{playlist.id}"
+        selected={$page.url.pathname === `/chat/${playlist.id}`}
+      >
+        <Popup
+          settings={popupSettings(playlist.id)}
+          class="flex justify-center [&>*]:pointer-events-none"
+          role="button"
+          tabindex="0"
         >
+          <Avatar
+            src={playlist.icon ?? undefined}
+            initials={playlist.name}
+            width="w-12"
+            rounded="rounded-xl"
+          />
+          <span slot="popup-card">{playlist.name}</span>
+        </Popup>
+      </AppRailAnchor>
+    {/each}
+    {#if hasMore}
+      <div
+        use:intersectionObserver
+        on:intersect={fetchNext}
+      />
+      {#each placeholders as placeholder}
+        <AppRailAnchor>
           <Popup
-            settings={popupSettings(playlist.id)}
+            settings={popupSettings(String(placeholder))}
             class="flex justify-center [&>*]:pointer-events-none"
             role="button"
             tabindex="0"
           >
-            <Avatar initials={playlist.id} width="w-12" rounded="rounded-xl" />
-
-            <span slot="popup-card">{playlist.title}</span>
+            <Avatar
+              initials=" "
+              width="w-12"
+              rounded="rounded-xl"
+            />
+            <span slot="popup-card">Loading...</span>
           </Popup>
         </AppRailAnchor>
       {/each}
+    {/if}
       <!-- TODO: add create button -->
-    {/await}
   </AppRail>
-  <PlaylistMenu title={selectedPlaylist?.title} />
+  <PlaylistMenu title={selectedPlaylist?.name} />
 </aside>
