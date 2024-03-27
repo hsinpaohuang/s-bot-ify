@@ -12,6 +12,6 @@ class GetSpotifyPlaylistsUseCase[T: BaseEntity](BaseUseCase):
     async def execute(self, user: UserEntity, offset: int = 0):
         return cast(
             SpotifyPlaylists,
-            await self._repo.list(user=user, offset=offset)) \
-                .to_playlist(str(user.spotify_id),
-        )
+            await self._repo.list(user=user, offset=offset),
+        ) \
+            .to_playlist(str(user.spotify_id))

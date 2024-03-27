@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field
 from dtos.image import SpotifyImages
+from dtos.paginated import SpotifyPaginated, Paginated
 
 class SpotifyEntityOwner(BaseModel):
     id: str
@@ -9,16 +10,7 @@ class SpotifyPlaylist(SpotifyImages, BaseModel):
     name: str
     owner: SpotifyEntityOwner
 
-class SpotifyPlaylists(BaseModel):
-    next: str | None = Field(...)
-    offset: int
-    items: list[SpotifyPlaylist]
-
-    @computed_field
-    @property
-    def has_more(self) -> bool:
-        return bool(self.next)
-
+class SpotifyPlaylists(SpotifyPaginated[SpotifyPlaylist], BaseModel):
     def editable_playlists(self, user_id: str):
         return [item for item in self.items if item.owner.id == user_id]
 
@@ -38,7 +30,5 @@ class Playlist(BaseModel):
     icon: str | None = Field(...)
     name: str
 
-class Playlists(BaseModel):
-    has_more: bool
-    offset: int
+class Playlists(Paginated, BaseModel):
     playlists: list[Playlist]

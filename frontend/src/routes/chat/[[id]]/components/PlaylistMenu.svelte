@@ -2,17 +2,34 @@
   import { Avatar } from "@skeletonlabs/skeleton";
 	import { page } from "$app/stores";
 	import { randomElement } from "$lib/utils/randomElement";
-  import { placeholders, playlistStore, type Song } from "../stores/playlistStore";
+  import { intersectionObserver } from "$lib/utils/intersectionObserverAction";
+  import {
+    placeholders,
+    tracksStore,
+    type Track,
+  } from "../stores/tracksStore";
 
   export let title: string | undefined;
 
-  let songs: Song[];
-  playlistStore.subscribe(state => {
-    songs = state.songs;
+  let tracks: Track[];
+  let hasMore = true;
+  tracksStore.subscribe(state => {
+    tracks = state;
+    hasMore = tracksStore.hasMore;
   });
 
+  async function fetchNext(e: CustomEvent<boolean>) {
+    if (!e.detail) {
+      return;
+    }
+
+    await tracksStore.fetchNext();
+  }
+
   $: id = $page.params.id;
-  $: fetching = id && playlistStore.fetchPlaylist(id);
+  $: {
+    tracksStore.id = $page.params.id;
+  }
 
   const validPaddings = ['w-12', 'w-14', 'w-16', 'w-20', 'w-24', 'w-28', 'w-32', 'w-36'];
 </script>
@@ -25,7 +42,7 @@
       👈 Select a playlist to get started
     </span>
   {:else}
-    <div class="bg-surface-100-800-token sticky top-0 z-[1] py-4 px-3 shadow-[0_7px_15px_0_rgb(0,0,0,0.12)]">
+    <div class="bg-surface-100-800-token sticky top-0 z-[1] py-4 px-3">
       <p class="text-2xl font-bold px-2">
         {#if title}
           {title}
@@ -34,8 +51,33 @@
         {/if}
       </p>
     </div>
+    <hr class="mx-3">
     <dl class="list-dl px-3">
-      {#await fetching}
+      {#each tracks as track}
+        <div class="w-full">
+          <span>
+            <Avatar
+              src={track.icon}
+              initials={track.id}
+              width="w-9"
+              rounded="rounded-lg"
+            />
+          </span>
+          <span class="overflow-x-hidden">
+            <dt class="text-ellipsis whitespace-nowrap overflow-x-hidden">
+              {track.name}
+            </dt>
+            <dd class="text-sm opacity-50 text-ellipsis whitespace-nowrap overflow-x-hidden">
+              {track.artists}
+            </dd>
+          </span>
+        </div>
+      {/each}
+      {#if hasMore}
+        <div
+          use:intersectionObserver
+          on:intersect={fetchNext}
+        />
         {#each placeholders as _}
           <div class="w-full">
             <span>
@@ -52,25 +94,11 @@
             </span>
           </div>
         {/each}
-      {:then}
-        {#each songs as song}
-          <div class="w-full">
-            <span>
-              <Avatar initials={song.id} width="w-9" rounded="rounded-lg" />
-            </span>
-            <span class="overflow-x-hidden">
-              <dt class="text-ellipsis whitespace-nowrap overflow-x-hidden">
-                {song.title}
-              </dt>
-              <dd class="text-sm opacity-50 text-ellipsis whitespace-nowrap overflow-x-hidden">
-                {song.authors}
-              </dd>
-            </span>
-          </div>
-        {/each}
-      {:catch}
-        Could not retrieve plalist at this time. Please try again later.
-      {/await}
+      {:else if !hasMore && tracks.length === 0}
+          <p class="flex justify-center pt-8">
+            (This playlist does not have any songs)
+          </p>
+      {/if}
     </dl>
   {/if}
 </section>

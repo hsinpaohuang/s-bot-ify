@@ -1,5 +1,9 @@
-import { authedFetch } from "$lib/utils/fetchWrappers";
 import { get, writable } from "svelte/store";
+import { authedFetch } from "$lib/utils/fetchWrappers";
+import {
+  PaginatedStore,
+  type PaginatedResponse,
+} from "$lib/utils/paginatedStore";
 
 export type Playlist = {
   id: string;
@@ -7,25 +11,23 @@ export type Playlist = {
   icon: string | null;
 }
 
-type GetPlaylistResponse = {
-  hasMore: boolean;
-  offset: number;
-  playlists: Playlist[];
-}
+type GetPlaylistResponse = PaginatedResponse & { playlists: Playlist[]; };
 
-class PlaylistsStore {
+class PlaylistsStore extends PaginatedStore {
   subscribe;
   hasMore = true;
 
-  private store;
-  private offset = 0;
+  protected store;
+  protected offset = 0;
 
   constructor() {
+    super();
+
     this.store = writable<Playlist[]>([]);
     this.subscribe = this.store.subscribe;
   }
 
-  private get length() {
+  protected get length() {
     return get(this.store).length;
   }
 
@@ -36,7 +38,7 @@ class PlaylistsStore {
 
     const params = new URLSearchParams();
     if (this.length) {
-      params.append('offset', String(this.offset + this.length));
+      params.append('offset', String(this.offset));
     }
 
     const res = await authedFetch<GetPlaylistResponse>(`/playlists?${params}`);
@@ -47,7 +49,7 @@ class PlaylistsStore {
     const { hasMore, offset, playlists } = res.data;
 
     this.hasMore = hasMore;
-    this.offset = offset;
+    this.offset = offset + playlists.length;
     this.store.update(state => state.concat(playlists));
   }
 }

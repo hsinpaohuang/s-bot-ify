@@ -18,9 +18,9 @@
     sideMenuStore.setIsOpen(!nav.to?.params?.id);
   });
 
-  let hasMore = true;
 
   let playlists: Playlist[];
+  let hasMore = true;
   playlistsStore.subscribe(state => {
     playlists = state;
     hasMore = playlistsStore.hasMore;
