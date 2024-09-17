@@ -22,8 +22,8 @@
   let playlists: Playlist[];
   let hasMore = true;
   playlistsStore.subscribe(state => {
-    playlists = state;
-    hasMore = playlistsStore.hasMore;
+    playlists = state.playlists;
+    hasMore = state.hasMore;
   });
 
   $: selectedPlaylist = playlists.find(({ id }) => id === $page.params.id);

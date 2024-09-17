@@ -14,8 +14,8 @@
   let tracks: Track[];
   let hasMore = true;
   tracksStore.subscribe(state => {
-    tracks = state;
-    hasMore = tracksStore.hasMore;
+    tracks = state.tracks;
+    hasMore = state.hasMore;
   });
 
   async function fetchNext(e: CustomEvent<boolean>) {

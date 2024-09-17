@@ -1,7 +1,7 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from datetime import datetime
-from pydantic import Field, BaseModel
-from beanie import PydanticObjectId, BackLink
+from pydantic import BaseModel, Field
+from beanie import PydanticObjectId, Link
 from entities.base_entity import BaseEntity
 
 # circular import workaround
@@ -9,13 +9,14 @@ if TYPE_CHECKING:
     from entities.user import UserEntity
 
 class ChatHistory(BaseModel):
-    id: Optional[PydanticObjectId]
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId)
     bot: bool
     timestamp: datetime
     content: str
 
 class PlaylistEntity(BaseEntity):
-    user: BackLink['UserEntity'] = Field(original_field='playlists') # pyright:ignore
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId)
+    user: Link['UserEntity']
     chat_state: dict[str, str | int | float]
     history: list[ChatHistory]
 

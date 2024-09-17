@@ -1,5 +1,6 @@
+import { authedFetch } from "$lib/utils/fetchWrappers";
 import { sleep } from "$lib/utils/sleep";
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 export type Message = {
   id?: string;
@@ -8,9 +9,14 @@ export type Message = {
   content: string;
 }
 
+type ChatResponse = {
+  history: Message[];
+}
+
 type State = {
   messages: Message[];
   isSending: boolean;
+  hasMore: boolean;
 }
 
 // TODO: replace with real chat feed
@@ -82,16 +88,28 @@ class ChatFeedStore {
   subscribe;
   FIXED_ARTIFICAL_DELAY = 1000;
 
-  private update;
+  private store;
   private id = '';
 
   constructor() {
-    const { subscribe, update } = writable<State>({
+    this.store = writable<State>({
       messages: [],
       isSending: false,
+      hasMore: true,
     });
-    this.subscribe = subscribe;
-    this.update = update;
+    this.subscribe = this.store.subscribe;
+  }
+
+  get length() {
+    return get(this.store).messages.length;
+  }
+
+  private get hasMore() {
+    return get(this.store).hasMore;
+  }
+
+  private get lastChatID() {
+    return get(this.store).messages[0]?.id;
   }
 
   private get randomArtificialDelay() {
@@ -99,23 +117,45 @@ class ChatFeedStore {
   }
 
   async fetchNewChat(id: string) {
+    if (id === this.id) {
+      return;
+    }
+
     this.id = id;
 
-    // TODO: replace with real chat
-    await sleep(this.FIXED_ARTIFICAL_DELAY);
-    const newChat = fakeChatFeed;
+    const res = await authedFetch<ChatResponse>(`/playlists/${id}/chat`);
+    if (!res || !res.ok || !res.data) {
+      throw new Error('Failed to fetch Chat history');
+    }
 
-    this.update(({ isSending }) => ({ messages: newChat, isSending }));
+    const { history } = res.data;
+
+    this.store.update(({ isSending }) => ({
+      messages: history,
+      isSending,
+      hasMore: history.length !== 0,
+    }));
   }
 
   async fetchPrevious() {
-    // TODO: replace with real previous chat
-    await sleep(this.FIXED_ARTIFICAL_DELAY);
-    const prevChat = fakeChatFeed;
+    if (!this.hasMore || !this.lastChatID) {
+      return;
+    }
 
-    this.update(({ messages, isSending }) => ({
-      messages: prevChat.concat(messages),
+    const params = new URLSearchParams();
+    params.append('before', this.lastChatID);
+
+    const res = await authedFetch<ChatResponse>(`/playlists/${this.id}/chat?${params}`);
+    if (!res || !res.ok || !res.data) {
+      throw new Error('Failed to fetch Chat history');
+    }
+
+    const { history } = res.data;
+
+    this.store.update(({ messages, isSending }) => ({
+      messages: messages.concat(history),
       isSending,
+      hasMore: history.length !== 0,
     }));
   }
 
@@ -127,9 +167,10 @@ class ChatFeedStore {
     };
 
     // optimistic update
-    this.update(({ messages }) => ({
+    this.store.update(({ messages, hasMore }) => ({
       messages: [...messages, newMessage],
       isSending: true,
+      hasMore,
     }));
 
     await sleep(this.randomArtificialDelay);
@@ -138,9 +179,10 @@ class ChatFeedStore {
     await sleep(this.FIXED_ARTIFICAL_DELAY);
     const response = fakeChatFeed[0]
 
-    this.update(({ messages }) => ({
+    this.store.update(({ messages, hasMore }) => ({
       messages: [...messages, response],
       isSending: false,
+      hasMore,
     }));
   }
 }

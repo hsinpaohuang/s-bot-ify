@@ -9,7 +9,7 @@ from entities.base_entity import BaseEntity
 class BaseReadOnlyRepository[T: BaseEntity](ABC):
     @abstractmethod
     @overload
-    async def get(self, id: str) -> Optional[T]: ...
+    async def get(self, id: str, conditions: Any = None) -> Optional[T]: ...
 
     @abstractmethod
     @overload

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from dtos.image import SpotifyImages
 from dtos.paginated import SpotifyPaginated, Paginated
+from entities.playlist import ChatHistory
 
 class SpotifyEntityOwner(BaseModel):
     id: str
@@ -32,3 +33,6 @@ class Playlist(BaseModel):
 
 class Playlists(Paginated, BaseModel):
     playlists: list[Playlist]
+
+class PlaylistChatOnly(BaseModel):
+    history: list[ChatHistory]

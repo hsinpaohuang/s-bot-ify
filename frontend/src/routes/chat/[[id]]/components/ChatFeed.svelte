@@ -22,11 +22,10 @@
   // scroll to bottom when new message is appended to chat
   $: {
     const lastID = chatFeed[chatFeed.length - 1]?.id;
-    const wasResponding = isResponding;
     tick().then(() => {
       chatFeedRef.scrollTo({
         top: chatFeedRef.scrollHeight,
-        behavior: wasResponding || !lastID ? 'smooth' : 'instant',
+        behavior: isResponding || !lastID ? 'smooth' : 'instant',
       });
     });
   }
@@ -55,6 +54,10 @@
     {#each chatFeed as message}
       <ChatMessage {message} />
     {/each}
+    {#if chatFeed.length === 0}
+      <!-- TODO: Fix this message -->
+      <span class="text-center">(No messages)</span>
+    {/if}
     {#if isResponding}
       <BotTyping />
     {/if}

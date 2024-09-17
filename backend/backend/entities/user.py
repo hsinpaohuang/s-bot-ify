@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from datetime import datetime
 from time import mktime
-from beanie import Link
+from beanie import Link, PydanticObjectId
 from pydantic import Field
 from fastapi_users.db import BaseOAuthAccount, BeanieBaseUser
 from entities.base_entity import BaseEntity
@@ -15,6 +15,7 @@ class OAuthAccount(BaseOAuthAccount):
     pass
 
 class UserEntity(BeanieBaseUser, BaseEntity):
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId)
     oauth_accounts: list[OAuthAccount] = Field(default_factory=list)
     playlists: list[Link['PlaylistEntity']] = Field(default_factory=list)
 

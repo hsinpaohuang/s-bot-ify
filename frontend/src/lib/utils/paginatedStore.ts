@@ -1,17 +1,20 @@
 import type { Writable } from "svelte/store";
 
-export type PaginatedResponse = {
+export type SpotifyPaginatedResponse = {
   hasMore: boolean;
   offset: number;
 }
 
-export abstract class PaginatedStore {
-  abstract hasMore: boolean;
+export type SpotifyPaginatedState = {
+  hasMore: boolean;
+}
 
-  protected abstract store: Writable<unknown>;
+export abstract class SpotifyPaginatedStore<T extends SpotifyPaginatedState> {
+  protected abstract store: Writable<T>;
   protected abstract offset: number;
 
   protected abstract get length(): number;
+  protected abstract get hasMore(): boolean;
 
   abstract fetchNext(): Promise<void>;
 }

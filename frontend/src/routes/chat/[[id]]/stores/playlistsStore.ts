@@ -1,8 +1,9 @@
 import { get, writable } from "svelte/store";
 import { authedFetch } from "$lib/utils/fetchWrappers";
 import {
-  PaginatedStore,
-  type PaginatedResponse,
+  SpotifyPaginatedStore,
+  type SpotifyPaginatedResponse,
+  type SpotifyPaginatedState,
 } from "$lib/utils/paginatedStore";
 
 export type Playlist = {
@@ -11,24 +12,30 @@ export type Playlist = {
   icon: string | null;
 }
 
-type GetPlaylistResponse = PaginatedResponse & { playlists: Playlist[]; };
+type GetPlaylistResponse = SpotifyPaginatedResponse & { playlists: Playlist[]; };
 
-class PlaylistsStore extends PaginatedStore {
+type State = SpotifyPaginatedState & {
+  playlists: Playlist[];
+}
+class PlaylistsStore extends SpotifyPaginatedStore<State> {
   subscribe;
-  hasMore = true;
 
-  protected store;
   protected offset = 0;
+  protected store;
 
   constructor() {
     super();
 
-    this.store = writable<Playlist[]>([]);
+    this.store = writable<State>({ hasMore: true, playlists: [] });
     this.subscribe = this.store.subscribe;
   }
 
   protected get length() {
-    return get(this.store).length;
+    return get(this.store).playlists.length;
+  }
+
+  protected get hasMore() {
+    return get(this.store).hasMore;
   }
 
   async fetchNext() {
@@ -48,9 +55,11 @@ class PlaylistsStore extends PaginatedStore {
 
     const { hasMore, offset, playlists } = res.data;
 
-    this.hasMore = hasMore;
     this.offset = offset + playlists.length;
-    this.store.update(state => state.concat(playlists));
+    this.store.update(({ playlists: statePlaylist }) => ({
+      playlists: statePlaylist.concat(playlists),
+      hasMore,
+    }));
   }
 }
 

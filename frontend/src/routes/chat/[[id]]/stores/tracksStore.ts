@@ -1,7 +1,8 @@
 import { get, writable } from "svelte/store";
 import {
-  PaginatedStore,
-  type PaginatedResponse,
+  SpotifyPaginatedStore,
+  type SpotifyPaginatedResponse,
+  type SpotifyPaginatedState,
 } from "$lib/utils/paginatedStore";
 import { authedFetch } from "$lib/utils/fetchWrappers";
 
@@ -12,11 +13,14 @@ export type Track = {
   icon: string;
 }
 
-type GetTracksReponse = PaginatedResponse & { tracks: Track[]; };
+type GetTracksReponse = SpotifyPaginatedResponse & { tracks: Track[]; };
 
-class TracksStore extends PaginatedStore {
+type State = SpotifyPaginatedState & { tracks: Track[] };
+
+const defaultState = { tracks: [], hasMore: true };
+
+class TracksStore extends SpotifyPaginatedStore<State> {
   subscribe;
-  hasMore = true;
 
   protected store;
   protected offset = 0;
@@ -26,13 +30,17 @@ class TracksStore extends PaginatedStore {
   constructor() {
     super();
 
-    this.store = writable<Track[]>([]);
+    this.store = writable<State>(defaultState);
     this.subscribe = this.store.subscribe;
     this._id = '';
   }
 
   protected get length() {
-    return get(this.store).length;
+    return get(this.store).tracks.length;
+  }
+
+  protected get hasMore() {
+    return get(this.store).hasMore;
   }
 
   set id(newID: string) {
@@ -59,15 +67,16 @@ class TracksStore extends PaginatedStore {
 
     const { hasMore, offset, tracks } = res.data;
 
-    this.hasMore = hasMore;
     this.offset = offset + tracks.length;
-    this.store.update(state => state.concat(tracks));
+    this.store.update(({ tracks: stateTracks }) => ({
+      tracks: stateTracks.concat(tracks),
+      hasMore,
+    }));
   }
 
   private resetState() {
     this.offset = 0;
-    this.hasMore = true;
-    this.store.set([]);
+    this.store.set(defaultState);
   }
 }
 
