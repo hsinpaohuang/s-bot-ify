@@ -1,13 +1,14 @@
 from typing import Type
-from base64 import b64encode
 from fastapi import status
 from pydantic import BaseModel
 from entities.user import UserEntity
 from utils.aiohttp_session import session
-from utils.env import settings
 from repositories.spotify.token_repository import SpotifyTokenRepository
 from use_cases.user.update_access_token_use_case import UpdateAccessTokenUseCase
 from dtos.spotify_token import SpotifyToken
+
+_spotify_token_repo = SpotifyTokenRepository()
+_update_access_token_use_case = UpdateAccessTokenUseCase(_spotify_token_repo)
 
 class SpotifyAPI():
     _SPOTIFY_API_V1_URL = 'https://api.spotify.com'
@@ -58,7 +59,7 @@ class SpotifyAPI():
 
     async def _check_token(self):
         if not self._user:
-            return True
+            return
 
         if self._user.is_token_expired:
             await self._refresh_access_token()
@@ -67,31 +68,19 @@ class SpotifyAPI():
         if not self._user:
             return
 
-        auth_header = b64encode(
-            f'{settings.spotify_client_id}:{settings.spotify_client_secret}' \
-            .encode(),
+        refresh_token = self._user.oauth_accounts[0].refresh_token
+
+        if not refresh_token:
+            raise ValueError('Refresh token missing')
+
+        # importing here to prevent circular import
+        from utils.fast_api_users_spotify import oauth_client
+        tokens = SpotifyToken.model_validate(
+            await oauth_client.refresh_token(refresh_token)
         )
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': auth_header,
-        }
-        data = {
-            'grant_type': 'refresh_token',
-            'refresh_token': self._user.oauth_accounts[0].refresh_token,
-        }
 
-        async with session.post(
-            self._SPOTIFY_TOKEN_URL,
-            headers=headers,
-            data=data,
-        ) as resp:
-            if not resp.ok:
-                raise RuntimeError('Failed to refresh token')
-
-            tokens = SpotifyToken.model_validate(await resp.json())
-            repo = SpotifyTokenRepository()
-            self._user = await UpdateAccessTokenUseCase(repo) \
-                .execute(self._user, tokens)
+        self._user = await _update_access_token_use_case \
+            .execute(self._user, tokens)
 
     @property
     def _access_token(self):

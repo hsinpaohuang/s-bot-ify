@@ -8,7 +8,6 @@ class SpotifyTokenRepository(BaseWriteOnlyRepository[UserEntity]):
         return cast(UserEntity, await user.set({
             'oauth_accounts.0.access_token': new_tokens.access_token,
             'oauth_accounts.0.expires_at': new_tokens.expires_at,
-            'oauth_accounts.0.refresh_token': new_tokens.refresh_token,
         }))
 
     async def get(self): ...
