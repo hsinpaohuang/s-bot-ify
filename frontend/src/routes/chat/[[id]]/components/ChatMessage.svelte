@@ -23,7 +23,7 @@
     <header class="flex items-center">
       <p class="font-bold">{sender}</p>
       &nbsp;
-      <small class="opacity-50">@ {message.timeStamp}</small>
+      <small class="opacity-50">@ {message.timestamp}</small>
     </header>
     <p class="whitespace-pre-wrap">{message.content}</p>
   </div>

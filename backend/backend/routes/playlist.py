@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from dtos.chat import NewMessage
 from entities.user import UserEntity
 from repositories.spotify.playlist_repository import SpotifyPlaylistRepository
 from repositories.spotify.track_repository import TrackRepository
@@ -10,6 +11,9 @@ from use_cases.playlist.get_spotify_tracks_of_playlist import (
 from use_cases.playlist.get_chat_messages_of_playlist import (
     GetChatMessageOfPlaylistUseCase,
 )
+from use_cases.playlist.get_playlist import GetPlaylistUseCase
+from use_cases.playlist.create_playlist import CreatePlaylistUseCase
+from use_cases.playlist.send_message import SendMessageUseCase
 from dtos.playlist import Playlists, PlaylistChatOnly
 from dtos.track import Tracks
 from utils.fast_api_users_spotify import current_active_user
@@ -24,6 +28,9 @@ _get_spotify_tracks_of_playlist_use_case = GetSpotifyTracksOfPlaylistUseCase(
 _get_chat_messages_of_playlist = GetChatMessageOfPlaylistUseCase(
     _playlist_repo,
 )
+_get_playlist_use_case = GetPlaylistUseCase(_playlist_repo)
+_create_playlist_use_case = CreatePlaylistUseCase(_playlist_repo)
+_send_message_use_case = SendMessageUseCase(_playlist_repo)
 
 router = APIRouter(
     prefix='/playlists',
@@ -54,3 +61,15 @@ async def get_chat_of_playlist(
 ):
     return await _get_chat_messages_of_playlist \
         .execute(user, playlist_id, before)
+
+@router.post('/{playlist_id}/chat', tags=['chat'])
+async def send_message(
+        playlist_id: str,
+        message: NewMessage,
+        user: UserEntity = Depends(current_active_user)
+):
+    playlist = await _get_playlist_use_case.execute(playlist_id, user)
+    if playlist == None:
+        playlist = await _create_playlist_use_case.execute(playlist_id, user)
+
+    await _send_message_use_case.execute(playlist, message)

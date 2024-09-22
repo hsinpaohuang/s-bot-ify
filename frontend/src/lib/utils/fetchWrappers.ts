@@ -38,7 +38,7 @@ export async function camelizedFetch<S, F = undefined>(
 
 /**
  * Wrapper for `camelizedFetch`, but automatically adds authorization header,
- * and also does not require API endpoint origin
+ * content-type: JSON header, and also does not require API endpoint origin
  *
  * Will redirect current page to `/login` if access token is missing
  *
@@ -68,7 +68,10 @@ export async function authedFetch<S, F = undefined>(
     : `${PUBLIC_API_URL}/api/${path.startsWith('/') ? path.slice(1) : path}`;
 
   const headers = Object.assign(
-    { Authorization: `${tokenType} ${accessToken}` },
+    {
+      Authorization: `${tokenType} ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
     options?.headers,
   );
 

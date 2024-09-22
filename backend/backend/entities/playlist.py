@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING
-from datetime import datetime
+from typing import TYPE_CHECKING, Annotated
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
-from beanie import PydanticObjectId, Link
+from beanie import Indexed, PydanticObjectId, Link
+import pymongo
 from entities.base_entity import BaseEntity
 
 # circular import workaround
@@ -11,14 +12,14 @@ if TYPE_CHECKING:
 class ChatHistory(BaseModel):
     id: PydanticObjectId = Field(default_factory=PydanticObjectId)
     bot: bool
-    timestamp: datetime
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     content: str
 
 class PlaylistEntity(BaseEntity):
-    id: PydanticObjectId = Field(default_factory=PydanticObjectId)
     user: Link['UserEntity']
-    chat_state: dict[str, str | int | float]
-    history: list[ChatHistory]
+    spotify_playlist_id: Annotated[str, Indexed(index_type=pymongo.TEXT, unique=True)]
+    chat_state: dict[str, str | int | float] = Field(default_factory=dict)
+    history: list[ChatHistory] = Field(default_factory=list)
 
     class Settings:
         name = 'playlists'

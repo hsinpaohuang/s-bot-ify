@@ -1,14 +1,15 @@
 from typing import Any, cast
 from beanie import PydanticObjectId
-from beanie.operators import LT
+from beanie.operators import LT, Push
 from repositories.base_repository import BaseRepository
-from entities.playlist import PlaylistEntity
+from entities.playlist import ChatHistory, PlaylistEntity
 from dtos.playlist import PlaylistChatOnly
 
 class PlaylistRepository(BaseRepository[PlaylistEntity]):
     async def get(self, id: str, args: dict[str, Any]):
         playlist = PlaylistEntity.find(
-            PlaylistEntity.id == id,
+            # avoid using id, use spotify_playlist_id instead
+            PlaylistEntity.spotify_playlist_id == id,
             # PlaylistEntity.user.id doesn't work
             # ref: https://github.com/BeanieODM/beanie/issues/165
             { 'user.$id': PydanticObjectId(args['user_id']) },
@@ -24,6 +25,25 @@ class PlaylistRepository(BaseRepository[PlaylistEntity]):
 
         return cast(PlaylistEntity | None, await playlist.first_or_none())
 
+    async def add_message(self, playlist: PlaylistEntity, message: ChatHistory):
+        updated_playlist = cast(PlaylistEntity, await playlist.update(
+            Push({ PlaylistEntity.history: message }),
+        ))
+
+        return next(
+            (i for i in updated_playlist.history if i.id == message.id),
+            message,
+        )
+
+    # todo: refactor
+    async def update(self, playlist: PlaylistEntity, updates: dict[str, Any]):
+        operation = None
+        if isinstance(updates, ChatHistory):
+            operation = Push({ PlaylistEntity.history: updates })
+
+        playlist = cast(PlaylistEntity, await playlist.update(operation))
+        return playlist
+
     async def list(self): ...
 
     async def create(self): ...
@@ -34,4 +54,3 @@ class PlaylistRepository(BaseRepository[PlaylistEntity]):
 
     async def upsert(self): ...
 
-    async def update(self): ...
