@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-# reference: https://fueled.com/the-cache/posts/backend/clean-architecture-with-fastapi/
+# ref: https://medium.com/@shaliamekh/clean-architecture-with-python-d62712fd8d4f
 
 class BaseUseCase(metaclass=ABCMeta):
     @abstractmethod

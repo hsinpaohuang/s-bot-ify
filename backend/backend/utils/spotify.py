@@ -3,12 +3,9 @@ from fastapi import status
 from pydantic import BaseModel
 from entities.user import UserEntity
 from utils.aiohttp_session import session
-from repositories.spotify.token_repository import SpotifyTokenRepository
+from repositories.user.beanie_user_repository import BeanieTokenRepository
 from use_cases.user.update_access_token_use_case import UpdateAccessTokenUseCase
 from dtos.spotify_token import SpotifyToken
-
-_spotify_token_repo = SpotifyTokenRepository()
-_update_access_token_use_case = UpdateAccessTokenUseCase(_spotify_token_repo)
 
 class SpotifyAPI():
     _SPOTIFY_API_V1_URL = 'https://api.spotify.com'
@@ -79,7 +76,9 @@ class SpotifyAPI():
             await oauth_client.refresh_token(refresh_token)
         )
 
-        self._user = await _update_access_token_use_case \
+        repo = BeanieTokenRepository()
+        update_access_token_use_case = UpdateAccessTokenUseCase(repo)
+        self._user = await update_access_token_use_case \
             .execute(self._user, tokens)
 
     @property

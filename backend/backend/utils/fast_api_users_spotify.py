@@ -1,4 +1,4 @@
-from typing import Optional, Callable, cast
+from typing import Optional, Callable, cast, Annotated
 from fastapi import Request, Depends
 from beanie import PydanticObjectId
 from httpx_oauth.oauth2 import OAuth2
@@ -21,7 +21,8 @@ _spotify_user_repo = SpotifyUserRepository()
 # reference: https://github.com/frankie567/httpx-oauth/issues/103#issuecomment-633380615
 class _SpotifyOAuth(OAuth2):
     async def get_id_email(self, token: str):
-        user = await GetSpotifyUserUseCase(_spotify_user_repo).execute(token)
+        user = await GetSpotifyUserUseCase(_spotify_user_repo) \
+            .execute(access_token=token)
         return user.id, user.email
 
 oauth_client = _SpotifyOAuth(
@@ -63,3 +64,8 @@ current_active_user = cast(
     Callable[[], UserEntity],
     fastapi_users.current_user(active=True),
 )
+
+CurrentActiveUserDep = Annotated[
+    UserEntity,
+    Depends(current_active_user),
+]

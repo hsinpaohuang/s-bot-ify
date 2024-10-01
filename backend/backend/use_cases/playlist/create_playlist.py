@@ -1,9 +1,9 @@
 from beanie import Link
 from beanie.operators import Push
-from use_cases.base_use_case import BaseUseCase
+from .. import BaseUseCase
 from entities.user import UserEntity
 from entities.playlist import PlaylistEntity
-from repositories.playlist_repository import PlaylistRepository
+from repositories.playlist import PlaylistRepository
 
 class CreatePlaylistUseCase(BaseUseCase):
     def __init__(self, repo: PlaylistRepository):
@@ -15,7 +15,7 @@ class CreatePlaylistUseCase(BaseUseCase):
             user = Link(user.to_ref(), UserEntity),
         ).create()
 
-        await user.update(Push({ UserEntity.playlists: playlist.to_ref() }))
+        await user.update(Push({ UserEntity.playlists: playlist.to_ref() })) # pyright: ignore
 
         return playlist
 

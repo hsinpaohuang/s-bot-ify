@@ -1,11 +1,11 @@
-from pydantic import BaseModel
-from use_cases.base_use_case import BaseUseCase
-from entities.base_entity import BaseEntity
-from repositories.base_repository import BaseWriteOnlyRepository
+from .. import BaseUseCase
+from repositories.user import UserRepository
+from entities.user import UserEntity
+from dtos.spotify_token import SpotifyToken
 
-class UpdateAccessTokenUseCase[E: BaseEntity, D: BaseModel](BaseUseCase):
-    def __init__(self, user_repo: BaseWriteOnlyRepository[E]):
+class UpdateAccessTokenUseCase(BaseUseCase):
+    def __init__(self, user_repo: UserRepository):
         self._repo = user_repo
 
-    async def execute(self, user: E, tokens: D):
-        return await self._repo.update(user, tokens)
+    async def execute(self, user: UserEntity, token: SpotifyToken):
+        return await self._repo.update_token(user, token)
