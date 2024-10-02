@@ -13,9 +13,6 @@ class GetChatMessageOfPlaylistUseCase(BaseUseCase):
         playlist_id: str,
         before: str | None = None,
     ) -> PlaylistChatOnly:
-        playlist = await self._repo.get(playlist_id, user, before)
+        messages = await self._repo.get_messages(playlist_id, before)
 
-        if not playlist:
-            return PlaylistChatOnly(history = [])
-
-        return await self._repo.get_messages(playlist, before)
+        return messages or PlaylistChatOnly(history=[])

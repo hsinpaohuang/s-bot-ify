@@ -6,8 +6,9 @@ from utils.env import settings
 from routes.spotify_auth import spotify_oauth_router
 from routes.user_info import router as user_info_router
 from routes.playlist import router as playlist_router
+from routes.chat import router as chat_router
 
-_routers = [user_info_router, playlist_router]
+_routers = [user_info_router, playlist_router, chat_router]
 
 def setup_routers(app: FastAPI):
     setup_oauth_routers(app)

@@ -5,6 +5,12 @@ from dtos.playlist import PlaylistChatOnly
 
 class PlaylistRepository(ABC):
     @abstractmethod
+    async def create(
+        self,
+        spotify_playlist_id: str,
+        user: UserEntity,
+    ) -> PlaylistEntity: ...
+    @abstractmethod
     async def get(
         self,
         id: str,
@@ -15,9 +21,9 @@ class PlaylistRepository(ABC):
     @abstractmethod
     async def get_messages(
         self,
-        playlist: PlaylistEntity,
+        playlist_id: str,
         before: str | None = None,
-    ) -> PlaylistChatOnly: ...
+    ) -> PlaylistChatOnly | None: ...
 
     @abstractmethod
     async def add_message(

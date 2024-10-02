@@ -1,4 +1,5 @@
 from typing import cast
+from beanie import Link
 from beanie.operators import LT, Push
 from . import PlaylistRepository
 from entities.playlist import ChatHistory, PlaylistEntity
@@ -6,6 +7,12 @@ from entities.user import UserEntity
 from dtos.playlist import PlaylistChatOnly
 
 class BeaniePlaylistRepository(PlaylistRepository):
+    async def create(self, spotify_playlist_id: str, user: UserEntity):
+        return await PlaylistEntity(
+            spotify_playlist_id = spotify_playlist_id,
+            user = Link(user.to_ref(), UserEntity),
+        ).create()
+
     async def get(self, id: str, user: UserEntity, before: str | None = None):
         playlist = PlaylistEntity.find(
             # avoid using id, use spotify_playlist_id instead
@@ -25,13 +32,20 @@ class BeaniePlaylistRepository(PlaylistRepository):
 
     async def get_messages(
         self,
-        playlist: PlaylistEntity,
+        playlist_id: str,
         before: str | None = None,
-    ) -> PlaylistChatOnly:
+    ) -> PlaylistChatOnly | None:
         # Mongodb's ObjectID is always incremental, so we can use it to query lt/gt
         # ref: https://medium.com/swlh/mongodb-pagination-fast-consistent-ece2a97070f3
-        playlist.find(LT(PlaylistEntity.history, before))
-        return playlist.project(PlaylistChatOnly)
+        playlist = PlaylistEntity.find(
+            PlaylistEntity.spotify_playlist_id == playlist_id,
+            projection_model=PlaylistChatOnly,
+        )
+
+        if before:
+            playlist.find(LT(PlaylistEntity.history, before))
+
+        return await playlist.first_or_none()
 
     async def add_message(self, playlist: PlaylistEntity, message: ChatHistory):
         updated_playlist = cast(PlaylistEntity, await playlist.update(
