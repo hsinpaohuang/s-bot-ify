@@ -17,6 +17,8 @@ type State = {
   messages: Message[];
   isSending: boolean;
   hasMore: boolean;
+  isFetching: boolean;
+  lastAddedMsgPos: 'top' | 'bottom' | null;
 }
 
 // TODO: replace with real chat feed
@@ -96,6 +98,8 @@ class ChatFeedStore {
       messages: [],
       isSending: false,
       hasMore: true,
+      isFetching: false,
+      lastAddedMsgPos: null,
     });
     this.subscribe = this.store.subscribe;
   }
@@ -123,6 +127,11 @@ class ChatFeedStore {
 
     this.id = id;
 
+    this.store.update(state => {
+      state.isFetching = true;
+      return state;
+    });
+
     const res = await authedFetch<ChatResponse>(`/playlists/${id}/chat`);
     if (!res || !res.ok || !res.data) {
       throw new Error('Failed to fetch Chat history');
@@ -134,6 +143,8 @@ class ChatFeedStore {
       messages: history,
       isSending,
       hasMore: history.length !== 0,
+      isFetching: false,
+      lastAddedMsgPos: 'bottom',
     }));
   }
 
@@ -145,6 +156,11 @@ class ChatFeedStore {
     const params = new URLSearchParams();
     params.append('before', this.lastChatID);
 
+    this.store.update(state => {
+      state.isFetching = true;
+      return state;
+    });
+
     const res = await authedFetch<ChatResponse>(`/playlists/${this.id}/chat?${params}`);
     if (!res || !res.ok || !res.data) {
       throw new Error('Failed to fetch Chat history');
@@ -152,11 +168,19 @@ class ChatFeedStore {
 
     const { history } = res.data;
 
-    this.store.update(({ messages, isSending }) => ({
-      messages: messages.concat(history),
-      isSending,
-      hasMore: history.length !== 0,
-    }));
+    this.store.update(state => {
+      state.messages = history.concat(state.messages);
+      state.hasMore = history.length !== 0;
+      state.lastAddedMsgPos = 'top';
+      return state;
+    });
+
+    await sleep(500);
+
+    this.store.update(state => {
+      state.isFetching = false;
+      return state;
+    });
   }
 
   async send(message: string) {
@@ -167,13 +191,18 @@ class ChatFeedStore {
     };
 
     // optimistic update
-    this.store.update(({ messages, hasMore }) => ({
-      messages: [...messages, newMessage],
-      isSending: true,
-      hasMore,
-    }));
+    this.store.update(state => {
+      state.messages.push(newMessage);
+      state.lastAddedMsgPos = 'bottom';
+      return state;
+    });
 
     await sleep(this.randomArtificialDelay);
+
+    this.store.update(state => {
+      state.isSending = true;
+      return state;
+    });
 
     const res = await authedFetch<any>(`/playlists/${this.id}/chat`, {
       method: 'POST',
@@ -183,11 +212,10 @@ class ChatFeedStore {
       throw new Error('Failed to fetch Chat history');
     }
 
-    this.store.update(({ messages, hasMore }) => ({
-      messages: [...messages],
-      isSending: false,
-      hasMore,
-    }));
+    this.store.update(state => {
+      state.isSending = false;
+      return state;
+    });
   }
 }
 

@@ -1,5 +1,5 @@
 from typing import cast
-from beanie import Link
+from beanie import Link, PydanticObjectId
 from beanie.operators import LT, Push
 from . import PlaylistRepository
 from entities.playlist import ChatHistory, PlaylistEntity
@@ -17,9 +17,9 @@ class BeaniePlaylistRepository(PlaylistRepository):
         playlist = PlaylistEntity.find(
             # avoid using id, use spotify_playlist_id instead
             PlaylistEntity.spotify_playlist_id == id,
-            # PlaylistEntity.user.id doesn't work
+            # PlaylistEntity.user.id doesn't work...?
             # ref: https://github.com/BeanieODM/beanie/issues/165
-            { 'user.$id': user.id },
+            PlaylistEntity.user.id == user.id, # pyright:ignore
         )
 
         if before:
@@ -33,19 +33,39 @@ class BeaniePlaylistRepository(PlaylistRepository):
     async def get_messages(
         self,
         playlist_id: str,
+        user: UserEntity,
         before: str | None = None,
     ) -> PlaylistChatOnly | None:
         # Mongodb's ObjectID is always incremental, so we can use it to query lt/gt
         # ref: https://medium.com/swlh/mongodb-pagination-fast-consistent-ece2a97070f3
         playlist = PlaylistEntity.find(
             PlaylistEntity.spotify_playlist_id == playlist_id,
-            projection_model=PlaylistChatOnly,
+            PlaylistEntity.user.id == user.id, # pyright:ignore
         )
 
         if before:
-            playlist.find(LT(PlaylistEntity.history, before))
+            playlist = playlist.aggregate(
+                [{
+                    '$project': {
+                        'history': { '$filter': {
+                            'input': '$history',
+                            'as': 'item',
+                            'cond': { '$lt': [
+                                '$$item.id',
+                                PydanticObjectId(before),
+                            ]},
+                        }},
+                    }
+                }],
+                projection_model=PlaylistChatOnly,
+            )
 
-        return await playlist.first_or_none()
+            res = (await playlist.to_list())[0]
+        else:
+            playlist = playlist.project(PlaylistChatOnly)
+            res = await playlist.first_or_none()
+
+        return res
 
     async def add_message(self, playlist: PlaylistEntity, message: ChatHistory):
         updated_playlist = cast(PlaylistEntity, await playlist.update(

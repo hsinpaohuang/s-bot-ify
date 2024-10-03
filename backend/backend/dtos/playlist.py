@@ -36,3 +36,6 @@ class Playlists(Paginated, BaseModel):
 
 class PlaylistChatOnly(BaseModel):
     history: list[ChatHistory]
+
+    class Settings:
+        projection = { 'history': { '$slice': ['$history', -10] } }

@@ -22,6 +22,7 @@ class PlaylistRepository(ABC):
     async def get_messages(
         self,
         playlist_id: str,
+        user: UserEntity,
         before: str | None = None,
     ) -> PlaylistChatOnly | None: ...
 

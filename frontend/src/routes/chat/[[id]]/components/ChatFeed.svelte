@@ -1,34 +1,63 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, beforeUpdate, afterUpdate } from "svelte";
 	import { afterNavigate } from "$app/navigation";
-	import { sleep } from "$lib/utils/sleep";
   import { chatFeedStore, placeholders, type Message } from "../stores/chatFeedStore";
   import ChatMessage from "./ChatMessage.svelte";
   import PlaceholderMessage from "./PlaceholderMessage.svelte";
   import BotTyping from './BotTyping.svelte';
+	import LoadPrevChat from "./LoadPrevChat.svelte";
 
   let chatFeedRef: HTMLDivElement;
 
-  let chatFeed: Message[];
+  let chatFeed: Message[] = [];
   let isResponding: boolean;
-  chatFeedStore.subscribe(async({ messages, isSending }) => {
+  let lastPos: 'top' | 'bottom' | null = null;
+  chatFeedStore.subscribe(async({ messages, isSending, lastAddedMsgPos }) => {
     chatFeed = messages;
-    if (isSending) {
-      await sleep(chatFeedStore.FIXED_ARTIFICAL_DELAY);
-    }
     isResponding = isSending;
+    lastPos = lastAddedMsgPos;
   });
 
   // scroll to bottom when new message is appended to chat
-  $: {
-    const lastID = chatFeed[chatFeed.length - 1]?.id;
-    tick().then(() => {
-      chatFeedRef.scrollTo({
-        top: chatFeedRef.scrollHeight,
-        behavior: isResponding || !lastID ? 'smooth' : 'instant',
-      });
+  async function scrollToBottom() {
+    await tick();
+
+    chatFeedRef.scrollTo({
+      top: chatFeedRef.scrollHeight,
+      behavior: 'smooth',
     });
   }
+
+  $: if (isResponding) {
+    scrollToBottom();
+  }
+
+  let prevHeight = 0;
+  beforeUpdate(() => {
+    if (!chatFeed.length) {
+      return;
+    }
+
+    prevHeight = chatFeedRef.scrollHeight;
+  });
+
+  afterUpdate(() => {
+    if (!chatFeed.length) {
+      return;
+    }
+
+    if (lastPos === 'top') {
+      const currHeight = chatFeedRef.scrollHeight;
+      const diff = currHeight - prevHeight;
+      if (diff === 0) {
+        return;
+      }
+
+      chatFeedRef.scrollBy({ top: diff, behavior: 'instant' });
+    } else if (lastPos === 'bottom') {
+      scrollToBottom();
+    }
+  });
 
   let fetching: Promise<void>;
 
@@ -51,6 +80,8 @@
       <PlaceholderMessage {bot} />
     {/each}
   {:then _}
+    <LoadPrevChat />
+
     {#each chatFeed as message}
       <ChatMessage {message} />
     {/each}
