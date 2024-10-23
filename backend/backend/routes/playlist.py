@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 from repositories.spotify.playlist_repository import SpotifyPlaylistRepository
-from repositories.spotify.track_repository import TrackRepository
+from repositories.spotify.track_repository import SpotifyTrackRepository
 from use_cases.playlist.get_spotify_playlists import GetSpotifyPlaylistsUseCase
 from use_cases.playlist.get_spotify_tracks_of_playlist import (
     GetSpotifyTracksOfPlaylistUseCase,
@@ -20,10 +20,13 @@ _SpotifyPlaylistRepoDep = Annotated[
     Depends(_init_spotify_playlist_repo),
 ]
 
-def _init_track_repo():
-    return TrackRepository()
+def _init_spotify_track_repo():
+    return SpotifyTrackRepository()
 
-_TrackRepoDep = Annotated[TrackRepository, Depends(_init_track_repo)]
+_TrackRepoDep = Annotated[
+    SpotifyTrackRepository,
+    Depends(_init_spotify_track_repo),
+]
 
 # init use cases
 

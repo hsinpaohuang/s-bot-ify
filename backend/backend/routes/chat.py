@@ -21,6 +21,7 @@ from use_cases.playlist.save_chat_state_of_playlist import (
 )
 from utils.fast_api_users_spotify import CurrentActiveUserDep
 from chatbot.chatbot import Chatbot
+from utils.chatbot_use_cases import ChatbotUseCasesDep
 
 # init repositories
 
@@ -122,11 +123,12 @@ async def send_message(
     get_playlist_use_case: _GetPlaylistUseCaseDep,
     send_message_use_case: _SendMessageUseCaseDep,
     save_chat_state_of_playlist_use_case: _SaveChatStateOfPlaylistUseCaseDep,
+    chat_bot_use_cases: ChatbotUseCasesDep,
     playlist_id: str,
     message: NewMessage,
 ):
     playlist = await get_playlist_use_case.execute(playlist_id, user)
-    chat_bot = Chatbot(playlist.chat_state)
+    chat_bot = Chatbot(playlist.chat_state, user, chat_bot_use_cases)
 
     _, response = gather(
         send_message_use_case.execute(playlist, message),

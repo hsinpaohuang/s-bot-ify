@@ -3,7 +3,6 @@ import pickle
 import pandas as pd
 from typing import cast, Sequence, Any
 from enum import Enum
-from ..spotify_api import spotify_api, Song
 from ..confirmation.confirmation_classifier import confirmation_classifier
 from ..utils.corpus_processor import CorpusProcessor
 from ..utils.protocols.handler import Handler
@@ -12,6 +11,9 @@ from ..utils.aggregate import aggregate
 from ..utils.errors import IntentNotFoundError
 import numpy.typing as npt
 import numpy as np
+from utils.chatbot_use_cases import ChatbotUseCases
+from entities.user import UserEntity
+from dtos.track import Track
 
 class _FollowupType(str, Enum):
     InitSearch = 'InitSearch'
@@ -48,10 +50,17 @@ class SearchHandler(Handler):
         _IntentType.Fifth,
     ]
 
-    def __init__(self, state: dict[str, Any] | None):
+    def __init__(
+        self,
+        state: dict[str, Any] | None,
+        user: UserEntity,
+        use_cases: ChatbotUseCases,
+    ):
         self._base_path = path.dirname(__file__)
         self._dataset, self._processor, self._doc_term_matrix = self._load_model()
         self._state = state or {}
+        self._user = user
+        self._use_cases = use_cases
 
     def match_intent(self, query: str, only: Sequence[str] = []):
         transformed = self._processor.transform(query)
@@ -112,10 +121,6 @@ class SearchHandler(Handler):
 
     def export_state(self):
         return self._state
-
-    # @property
-    # def search_results(self):
-    #     return cast(list[Song] | None, self._state.get('search_results'))
 
     def _load_model(self):
         model_path = path.join(self._base_path, 'search_model.pickle')
@@ -243,11 +248,17 @@ class SearchHandler(Handler):
         artists = cast(str, self._state['artists'])
         page = cast(int, self._state['page'])
 
-        search_results = spotify_api.search(search_query, search_type, artists, page)
-        self._state['search_results'] = search_results
-        return self._realise_search_results(search_results)
+        search_results = await self._use_cases.search_tracks_use_case.execute(
+            self._user,
+            search_query,
+            search_type,
+            artists,
+            page,
+        )
+        self._state['search_results'] = search_results.as_tracks.tracks
+        return self._realise_search_results(self._state['search_results'])
 
-    def _realise_search_results(self, results: list[Song]):
+    def _realise_search_results(self, results: list[Track]):
         page = cast(int, self._state['page'])
         if len(results) == 0:
             if self._state['page'] != 1:
@@ -259,9 +270,9 @@ class SearchHandler(Handler):
             return 'No results found.'
 
         response = f'Here is page {page} of the results I found:\n\n'
-        for index, result in enumerate(results):
-            artists = self._aggregate_artists(result['artists'])
-            response += f'{index + 1}.\n{result["name"]} by {artists}\n\n'
+        for index, track in enumerate(results):
+            artists = self._aggregate_artists(track.artists)
+            response += f'{index + 1}.\n{track.name} by {artists}\n\n'
 
         if len(results) < 5:
             response += "You've reached the end of the search results.\n"
@@ -282,17 +293,17 @@ class SearchHandler(Handler):
 
     def _handle_add_to_playlist(self, position: int):
         index = position - 1
-        songs = cast(list[Song] | None, self._state.get('search_results'))
-        if not songs:
+        tracks = cast(list[Track] | None, self._state.get('search_results'))
+        if not tracks:
             raise IntentNotFoundError
 
-        song = songs[index]
-        artists = self._aggregate_artists(song['artists'])
+        track = tracks[index]
+        artists = self._aggregate_artists(track.artists)
         # todo: add song to playlist
 
         self._state['followup_type'] = _FollowupType.AddMoreSongs
 
-        response = f'Done! {song["name"]} by {artists} has been added to your playlist.\n'
+        response = f'Done! {track.name} by {artists} has been added to your playlist.\n'
         response += 'Would you like to add more from the current search results?'
 
         return response

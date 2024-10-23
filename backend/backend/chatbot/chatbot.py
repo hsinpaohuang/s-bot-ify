@@ -4,15 +4,26 @@ from .utils.errors import IntentNotFoundError
 from .smalltalk.smalltalk_handler import SmalltalkHandler
 from .search.search_handler import SearchHandler
 from .playlist.playlist_handler import PlaylistHandler
+from utils.chatbot_use_cases import ChatbotUseCasesDep
+from entities.user import UserEntity
 
 class Chatbot():
-    def __init__(self, data: dict[str, Any]):
+    def __init__(
+        self,
+        data: dict[str, Any],
+        user: UserEntity,
+        use_cases: ChatbotUseCasesDep,
+    ):
         self._data = self._init_data(data)
         self._handlers: dict[str, Handler] = {
             SmalltalkHandler.key: SmalltalkHandler(
                 self._data.get(SmalltalkHandler.key),
             ),
-            SearchHandler.key: SearchHandler(self._data.get(SearchHandler.key)),
+            SearchHandler.key: SearchHandler(
+                self._data.get(SearchHandler.key),
+                user,
+                use_cases,
+            ),
             PlaylistHandler.key: PlaylistHandler(
                 self._data.get(PlaylistHandler.key)
             ),

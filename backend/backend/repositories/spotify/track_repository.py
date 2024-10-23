@@ -4,7 +4,7 @@ from entities.user import UserEntity
 from dtos.track import SpotifyTracks, SpotifySearchResult
 from utils.spotify import SpotifyAPI
 
-class TrackRepository():
+class SpotifyTrackRepository():
     async def list(
         self,
         user: UserEntity,

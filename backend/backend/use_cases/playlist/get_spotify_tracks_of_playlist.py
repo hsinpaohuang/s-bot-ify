@@ -1,9 +1,9 @@
 from .. import BaseUseCase
-from repositories.spotify.track_repository import TrackRepository
+from repositories.spotify.track_repository import SpotifyTrackRepository
 from entities.user import UserEntity
 
 class GetSpotifyTracksOfPlaylistUseCase(BaseUseCase):
-    def __init__(self, repo: TrackRepository):
+    def __init__(self, repo: SpotifyTrackRepository):
         self._repo = repo
 
     async def execute(

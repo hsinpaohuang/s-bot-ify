@@ -48,7 +48,7 @@ class Track(BaseModel):
     id: str
     name: str
     icon: str
-    artists: str
+    artists: list[str]
 
 class Tracks(Paginated, BaseModel):
     tracks: list[Track]
