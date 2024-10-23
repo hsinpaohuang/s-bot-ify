@@ -1,0 +1,2 @@
+class IntentNotFoundError(ValueError):
+    pass

@@ -1,6 +1,7 @@
 from typing import Annotated
+from asyncio import gather
 from fastapi import APIRouter, Depends
-from dtos.chat import NewMessage
+from dtos.chat import NewMessage, ChatMessage
 from repositories.playlist import PlaylistRepository
 from repositories.playlist.beanie_playlist_repository import (
     BeaniePlaylistRepository
@@ -15,8 +16,11 @@ from use_cases.playlist.get_chat_messages_of_playlist import (
 from use_cases.playlist.get_playlist import GetPlaylistUseCase
 from use_cases.playlist.create_playlist import CreatePlaylistUseCase
 from use_cases.playlist.send_message import SendMessageUseCase
-from dtos.playlist import PlaylistChatOnly
+from use_cases.playlist.save_chat_state_of_playlist import (
+    SaveChatStateOfPlaylistUseCase,
+)
 from utils.fast_api_users_spotify import CurrentActiveUserDep
+from chatbot.chatbot import Chatbot
 
 # init repositories
 
@@ -59,6 +63,11 @@ def _init_get_playlist_use_case(
 
     return GetPlaylistUseCase(playlist_repo, create_playlist_use_case)
 
+_GetPlaylistUseCaseDep = Annotated[
+    GetPlaylistUseCase,
+    Depends(_init_get_playlist_use_case),
+]
+
 def _init_send_message_use_case(
     playlist_repo: _PlaylistRepoDep,
     user_repo: _UserRepoDep,
@@ -75,6 +84,16 @@ _SendMessageUseCaseDep = Annotated[
     Depends(_init_send_message_use_case),
 ]
 
+def _init_save_chat_state_of_playlist_use_case(
+        playlist_repo: _PlaylistRepoDep,
+):
+    return SaveChatStateOfPlaylistUseCase(playlist_repo)
+
+_SaveChatStateOfPlaylistUseCaseDep = Annotated[
+    SaveChatStateOfPlaylistUseCase,
+    Depends(_init_save_chat_state_of_playlist_use_case),
+]
+
 # router
 
 router = APIRouter(
@@ -84,7 +103,7 @@ router = APIRouter(
 
 @router.get(
     '/{playlist_id}/chat',
-    response_model=PlaylistChatOnly,
+    response_model=list[ChatMessage],
 )
 async def get_chat_of_playlist(
     user: CurrentActiveUserDep,
@@ -92,14 +111,38 @@ async def get_chat_of_playlist(
     playlist_id: str,
     before: str | None = None,
 ):
-    return await get_chat_message_of_playlist_use_case \
+    chat = await get_chat_message_of_playlist_use_case \
         .execute(user, playlist_id, before)
 
-@router.post('/{playlist_id}/chat')
+    return [ChatMessage.from_chat_history(m) for m in chat.history]
+
+@router.post('/{playlist_id}/chat', response_model=ChatMessage)
 async def send_message(
     user: CurrentActiveUserDep,
+    get_playlist_use_case: _GetPlaylistUseCaseDep,
     send_message_use_case: _SendMessageUseCaseDep,
+    save_chat_state_of_playlist_use_case: _SaveChatStateOfPlaylistUseCaseDep,
     playlist_id: str,
     message: NewMessage,
 ):
-    await send_message_use_case.execute(playlist_id, user, message)
+    playlist = await get_playlist_use_case.execute(playlist_id, user)
+    chat_bot = Chatbot(playlist.chat_state)
+
+    _, response = gather(
+        send_message_use_case.execute(playlist, message),
+        chat_bot.respond(message.content),
+    )
+
+    response_message, _ = await gather(
+        send_message_use_case.execute(
+            playlist,
+            NewMessage(content=response),
+            is_bot=True,
+        ),
+        save_chat_state_of_playlist_use_case.execute(
+            playlist,
+            chat_bot.export_data(),
+        ),
+    )
+
+    return ChatMessage.from_chat_history(response_message)

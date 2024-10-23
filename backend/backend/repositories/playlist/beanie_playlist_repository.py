@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, Any
 from beanie import Link, PydanticObjectId
 from beanie.operators import LT, Push
 from . import PlaylistRepository
@@ -29,6 +29,14 @@ class BeaniePlaylistRepository(PlaylistRepository):
             playlist = cast(PlaylistEntity, playlist.project(PlaylistChatOnly))
 
         return cast(PlaylistEntity | None, await playlist.first_or_none())
+
+    async def set_chat_state(
+        self,
+        playlist: PlaylistEntity,
+        chat_state: dict[str, Any]
+    ) -> PlaylistEntity:
+        playlist.chat_state = chat_state
+        return await playlist.save()
 
     async def get_messages(
         self,

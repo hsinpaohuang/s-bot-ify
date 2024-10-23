@@ -5,7 +5,7 @@ import { recursivelyCamelize } from "$lib/utils/caseConversion";
 import { HTTPStatusCode } from "$lib/utils/httpStatusCode";
 
 type ResponseWithData<T> = Omit<
-  Response & { data?: T },
+  Response & { data: T },
   'arrayBuffer' | 'blob' | 'formData' | 'json' | 'text'
 >;
 
@@ -31,9 +31,8 @@ export async function camelizedFetch<S, F = undefined>(
   const res = await fetch(url, options);
 
   const data = recursivelyCamelize(await res.json());
-  Object.assign(res, { data });
-
-  return res;
+  return Object.assign(res, { data }) as
+    ResponseWithSuccessData<S> | ResponseWithFailedData<F>;
 }
 
 /**

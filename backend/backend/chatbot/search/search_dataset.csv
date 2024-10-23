@@ -1,0 +1,28 @@
+QuestionID,Question,Response,FollowupType
+1,I want to search songs,"Sure, Would you like to search by name of the song or the genre?",InitSearch
+2,search,Would you like to search by name of the song or the genre?,InitSearch
+3,I want to search by name,"Ok, please tell me the name of the song",SearchByName
+4,name,"Ok, please tell me the name of the song",SearchByName
+5,search by name,"Ok, please tell me the name of the song",SearchByName
+6,I want to search by genre,"Ok, please tell me which genre",SearchByGenre
+7,genre,"Ok, please tell me which genre",SearchByGenre
+8,search by genre,"Ok, please tell me which genre",SearchByGenre
+9,_add_artists_,"Last step, which artist would you like to include in the search? (leave blank if you don't have one in mind)",AddArtists
+11,next page,,NextPage
+12,show next page,,NextPage
+14,prev page,,PrevPage
+15,show prev page,,PrevPage
+16,previous,,PrevPage
+17,previous page,,PrevPage
+18,show previous page,,PrevPage
+19,the first one,,First
+20,number one,,First
+21,the second one,,Second
+22,number two,,Second
+23,the third one,,Third
+24,number three,,Third
+25,the fourth one,,Fourth
+26,number four,,Fourth
+27,the fifth one,,Fifth
+28,number five,,Fifth
+

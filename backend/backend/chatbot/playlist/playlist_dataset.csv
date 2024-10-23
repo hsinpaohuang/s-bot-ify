@@ -1,0 +1,34 @@
+QuestionID,Question,Response,FollowupType
+1,I want to remove a song,,RemoveFromPlaylist
+2,I want to remove from playlist,,RemoveFromPlaylist
+3,I want to delete a song,,RemoveFromPlaylist
+6,remove from playlist,,RemoveFromPlaylist
+7,delete from playlist,,RemoveFromPlaylist
+16,next page,,NextPage
+17,show next page,,NextPage
+19,prev page,,PrevPage
+20,show prev page,,PrevPage
+21,previous,,PrevPage
+22,previous page,,PrevPage
+23,show previous page,,PrevPage
+24,the first one,,First
+25,number one,,First
+26,the second one,,Second
+27,number two,,Second
+28,the third one,,Third
+29,number three,,Third
+30,the fourth one,,Fourth
+31,number four,,Fourth
+32,the fifth one,,Fifth
+33,number five,,Fifth
+34,I want to remove all songs from playlist,Done! {song_count} have been removed from your playlist.,RemoveAll
+35,I want to remove all songs from my playlist,Done! {song_count} have been removed from your playlist.,RemoveAll
+36,I want to remove all songs,Done! {song_count} have been removed from your playlist.,RemoveAll
+37,remove all,Done! {song_count} have been removed from your playlist.,RemoveAll
+38,I want to delete all songs from playlist,Done! {song_count} have been deleted from your playlist.,RemoveAll
+39,I want to delete all songs from my playlist,Done! {song_count} have been deleted from your playlist.,RemoveAll
+40,I want to delete all songs,Done! {song_count} have been deleted from your playlist.,RemoveAll
+41,delete all,Done! {song_count} have been deleted from your playlist.,RemoveAll
+42,Delete playlist,Done! Your playlist has been deleted.,RemoveAll
+43,Remove playlist,Done! Your playlist has been removed.,RemoveAll
+44,Reset playlist,Done! Your playlist has been reset.,RemoveAll

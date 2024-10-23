@@ -34,6 +34,15 @@ class SpotifyTracks(SpotifyPaginated[SpotifyTrackItem], BaseModel):
 
         return Tracks.model_validate(output)
 
+class SpotifySearchResult(BaseModel):
+    tracks: SpotifyTracks
+
+    @property
+    def as_tracks(self):
+        output = self.tracks.model_dump(include={ 'has_more', 'offset' })
+        output['tracks'] = self.tracks.as_tracks
+
+        return Tracks.model_validate(output)
 
 class Track(BaseModel):
     id: str

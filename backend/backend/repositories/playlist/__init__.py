@@ -1,3 +1,4 @@
+from typing import Any
 from abc import ABC, abstractmethod
 from entities.user import UserEntity
 from entities.playlist import PlaylistEntity, ChatHistory
@@ -10,6 +11,7 @@ class PlaylistRepository(ABC):
         spotify_playlist_id: str,
         user: UserEntity,
     ) -> PlaylistEntity: ...
+
     @abstractmethod
     async def get(
         self,
@@ -17,6 +19,13 @@ class PlaylistRepository(ABC):
         user: UserEntity,
         before: str | None = None,
     ) -> PlaylistEntity | None: ...
+
+    @abstractmethod
+    async def set_chat_state(
+        self,
+        playlist: PlaylistEntity,
+        chat_state: dict[str, Any],
+    ) -> PlaylistEntity: ...
 
     @abstractmethod
     async def get_messages(

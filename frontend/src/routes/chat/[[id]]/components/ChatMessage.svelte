@@ -4,8 +4,11 @@
 
   export let message: Message;
 
-
   $: sender = message.bot ? 'Bot' : 'You';
+
+  $: formattedTime = Intl.DateTimeFormat().format(
+    Math.trunc(message.timestamp * 1000),
+  );
 
   $: cardColor = message.bot
     ? 'variant-glass-primary'
@@ -23,7 +26,7 @@
     <header class="flex items-center">
       <p class="font-bold">{sender}</p>
       &nbsp;
-      <small class="opacity-50">@ {message.timestamp}</small>
+      <small class="opacity-50">@ {formattedTime}</small>
     </header>
     <p class="whitespace-pre-wrap">{message.content}</p>
   </div>

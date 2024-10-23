@@ -5,12 +5,8 @@ import { get, writable } from "svelte/store";
 export type Message = {
   id?: string;
   bot: boolean;
-  timestamp: string;
+  timestamp: number;
   content: string;
-}
-
-type ChatResponse = {
-  history: Message[];
 }
 
 type State = {
@@ -22,7 +18,8 @@ type State = {
 }
 
 // TODO: replace with real chat feed
-const timestamp = Intl.DateTimeFormat().format();
+// const timestamp = Intl.DateTimeFormat().format();
+const timestamp = Date.now() / 1000;
 const fakeChatFeed: Message[] = [
   {
     id: '1',
@@ -132,15 +129,13 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<ChatResponse>(`/playlists/${id}/chat`);
+    const res = await authedFetch<Message[]>(`/playlists/${id}/chat`);
     if (!res || !res.ok || !res.data) {
       throw new Error('Failed to fetch Chat history');
     }
 
-    const { history } = res.data;
-
     this.store.update(({ isSending }) => ({
-      messages: history,
+      messages: res.data,
       isSending,
       hasMore: history.length !== 0,
       isFetching: false,
@@ -161,15 +156,13 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<ChatResponse>(`/playlists/${this.id}/chat?${params}`);
+    const res = await authedFetch<Message[]>(`/playlists/${this.id}/chat?${params}`);
     if (!res || !res.ok || !res.data) {
       throw new Error('Failed to fetch Chat history');
     }
 
-    const { history } = res.data;
-
     this.store.update(state => {
-      state.messages = history.concat(state.messages);
+      state.messages = res.data.concat(state.messages);
       state.hasMore = history.length !== 0;
       state.lastAddedMsgPos = 'top';
       return state;
@@ -186,7 +179,7 @@ class ChatFeedStore {
   async send(message: string) {
     const newMessage: Message = {
       bot: false,
-      timestamp: Intl.DateTimeFormat().format(),
+      timestamp: Date.now() / 1000,
       content: message,
     };
 
@@ -204,15 +197,17 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<any>(`/playlists/${this.id}/chat`, {
+    const res = await authedFetch<Message>(`/playlists/${this.id}/chat`, {
       method: 'POST',
       body: JSON.stringify({ content: message }),
     });
-    if (!res || !res.ok || !res.data) {
+
+    if (!res?.ok || !res.data) {
       throw new Error('Failed to fetch Chat history');
     }
 
     this.store.update(state => {
+      state.messages.push(res.data);
       state.isSending = false;
       return state;
     });

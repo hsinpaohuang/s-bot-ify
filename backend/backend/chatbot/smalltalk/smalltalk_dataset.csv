@@ -1,0 +1,15 @@
+QuestionID,Question,Response,IntentType
+1,Hi,"Hello!",Greeting
+2,Hello,"Hello! How can I help you today?",Greeting
+3,How are you doing?,"I'm very well, thanks for asking!",
+4,How is the weather?,"I'm sorry, I cannot look up weather information. But if you'd like, this link can tell you more about the weather: https://www.google.com/search?q=weather",
+8,thanks,Glad I could help!
+9,thank you,You're welcome!
+10,cheers,No problem!
+13,What can you do?,,Help
+14,What can you help me with?,,Help
+15,help,"Here are some of the things I can help you with:
+I can help you add songs to your playlist by searching. Try ""I want to search a song"".
+I can help you remove songs from your playlist. Try ""I want to remove a song"".
+I can also help you remove all songs from your playlist. Try ""I want to remove all songs from my playlist"".
+To quit, enter ""STOP""",Help

@@ -1,6 +1,6 @@
 from dtos.chat import NewMessage
 from .. import BaseUseCase
-from entities.user import UserEntity
+from entities.playlist import PlaylistEntity
 from repositories.playlist import PlaylistRepository
 from use_cases.playlist.get_playlist import GetPlaylistUseCase
 
@@ -13,9 +13,13 @@ class SendMessageUseCase(BaseUseCase):
         self._repo = repo
         self._get_playlist_use_case = get_playlist_use_case
 
-    async def execute(self, playlist_id: str, user: UserEntity, message: NewMessage):
-        playlist = await self._get_playlist_use_case.execute(playlist_id, user)
-        chat = message.to_chat_history(is_bot = False)
-        await self._repo.add_message(playlist, chat)
+    async def execute(
+        self,
+        playlist: PlaylistEntity,
+        message: NewMessage,
+        is_bot: bool = False,
+    ):
+        chat = message.to_chat_history(is_bot)
+        return await self._repo.add_message(playlist, chat)
 
 

@@ -18,6 +18,10 @@ beanie = "^1.25.0"
 aiohttp = "^3.9.3"
 pydantic-settings = "^2.1.0"
 fastapi-users = {extras = ["beanie", "oauth"], version = "^13.0.0"}
+nltk = "^3.9.1"
+numpy = "^2.1.1"
+scikit-learn = "^1.5.2"
+pandas = "^2.2.3"
 
 
 [tool.poetry.group.dev.dependencies]

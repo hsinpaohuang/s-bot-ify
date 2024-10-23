@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from utils.db import connect_to_db
 from utils.router import setup_routers
 from utils.env import settings
+from chatbot.utils.check_nltk_data import check_nltk_data
+
+check_nltk_data()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from beanie import Indexed, PydanticObjectId, Link
@@ -18,7 +18,7 @@ class ChatHistory(BaseModel):
 class PlaylistEntity(BaseEntity):
     user: Link['UserEntity']
     spotify_playlist_id: Annotated[str, Indexed(index_type=pymongo.TEXT, unique=True)]
-    chat_state: dict[str, str | int | float] = Field(default_factory=dict)
+    chat_state: dict[str, Any] = Field(default_factory=dict)
     history: list[ChatHistory] = Field(default_factory=list)
 
     class Settings:

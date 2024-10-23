@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from dtos.image import SpotifyImages
 from dtos.paginated import SpotifyPaginated, Paginated
+from dtos.chat import ChatMessage
 from entities.playlist import ChatHistory
 
 class SpotifyEntityOwner(BaseModel):
@@ -35,7 +36,10 @@ class Playlists(Paginated, BaseModel):
     playlists: list[Playlist]
 
 class PlaylistChatOnly(BaseModel):
-    history: list[ChatHistory]
+    history: list[ChatHistory] = Field(default_factory=list)
+
+    def convert(self):
+        return [ChatMessage.from_chat_history(h) for h in self.history]
 
     class Settings:
         projection = { 'history': { '$slice': ['$history', -10] } }
