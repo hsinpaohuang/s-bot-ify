@@ -8,6 +8,7 @@ class SpotifyTrack(BaseModel):
     name: str
     album: SpotifyImages
     artists: list[dict[Literal['name'], str]]
+    uri: str
 
     @property
     def as_track(self):
@@ -17,7 +18,7 @@ class SpotifyTrack(BaseModel):
         else:
             artists = f"{', '.join(artist_names[:-1])} and {artist_names[-1]}"
 
-        output = self.model_dump(include={ 'id', 'name' })
+        output = self.model_dump(include={ 'id', 'name', 'uri' })
         output['icon'] = self.album.icon
         output['artists'] = artists
 
@@ -49,6 +50,7 @@ class Track(BaseModel):
     name: str
     icon: str
     artists: list[str]
+    uri: str
 
 class Tracks(Paginated, BaseModel):
     tracks: list[Track]

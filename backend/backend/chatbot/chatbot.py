@@ -6,15 +6,16 @@ from .search.search_handler import SearchHandler
 from .playlist.playlist_handler import PlaylistHandler
 from utils.chatbot_use_cases import ChatbotUseCasesDep
 from entities.user import UserEntity
+from entities.playlist import PlaylistEntity
 
 class Chatbot():
     def __init__(
         self,
-        data: dict[str, Any],
+        playlist: PlaylistEntity,
         user: UserEntity,
         use_cases: ChatbotUseCasesDep,
     ):
-        self._data = self._init_data(data)
+        self._data = self._init_data(playlist.chat_state)
         self._handlers: dict[str, Handler] = {
             SmalltalkHandler.key: SmalltalkHandler(
                 self._data.get(SmalltalkHandler.key),
@@ -22,6 +23,7 @@ class Chatbot():
             SearchHandler.key: SearchHandler(
                 self._data.get(SearchHandler.key),
                 user,
+                playlist.spotify_playlist_id,
                 use_cases,
             ),
             PlaylistHandler.key: PlaylistHandler(

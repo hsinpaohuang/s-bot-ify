@@ -1,5 +1,4 @@
-from typing import Type
-from fastapi import status
+from typing import Type, overload, Any
 from pydantic import BaseModel
 from entities.user import UserEntity
 from utils.aiohttp_session import session
@@ -26,13 +25,8 @@ class SpotifyAPI():
             path: str,
             result_model: Type[T],
             params: dict[str, str] | None = None,
-            check_token: bool=True
         ) -> T:
-        is_token_checked = False
-
-        if check_token:
-            await self._check_token()
-            is_token_checked = True
+        await self._check_token()
 
         parsed_path = path.lstrip('/')
 
@@ -44,15 +38,52 @@ class SpotifyAPI():
             result = await resp.json()
 
             if not resp.ok:
-                if resp.status == status.HTTP_401_UNAUTHORIZED \
-                    and not is_token_checked:
-                    return await self.get(path, result_model)
-                else:
-                    raise RuntimeError(
-                        f'Failed to get {path}: {result['error']['message']}',
-                    )
+                raise RuntimeError(
+                    f'Failed to get {path}: {result['error']['message']}',
+                )
 
             return result_model.model_validate(result)
+
+    @overload
+    async def post(
+        self,
+        path: str,
+        result_model: None,
+        data: dict[str, Any] | None = None,
+    ) -> None: ...
+
+    @overload
+    async def post[T: BaseModel](
+        self,
+        path: str,
+        result_model: Type[T],
+        data: dict[str, Any] | None = None,
+    ) -> T: ...
+
+    async def post[T: BaseModel](
+        self,
+        path: str,
+        result_model: Type[T] | None,
+        data: dict[str, Any] | None = None,
+    ) -> T | None:
+        await self._check_token()
+
+        parsed_path = path.lstrip('/')
+
+        async with session.post(
+            f'{self._SPOTIFY_API_V1_URL}/{parsed_path}',
+            headers=self._header,
+            data=data,
+        ) as resp:
+            result = await resp.json()
+
+            if not resp.ok:
+                raise RuntimeError(
+                    f'Failed to get {path}: {result['error']['message']}',
+                )
+
+            if result_model:
+                return result_model.model_validate(result)
 
     async def _check_token(self):
         if not self._user:

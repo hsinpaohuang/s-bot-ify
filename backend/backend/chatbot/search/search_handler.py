@@ -54,12 +54,14 @@ class SearchHandler(Handler):
         self,
         state: dict[str, Any] | None,
         user: UserEntity,
+        spotify_playlist_id: str,
         use_cases: ChatbotUseCases,
     ):
         self._base_path = path.dirname(__file__)
         self._dataset, self._processor, self._doc_term_matrix = self._load_model()
         self._state = state or {}
         self._user = user
+        self.spotify_playlist_id = spotify_playlist_id
         self._use_cases = use_cases
 
     def match_intent(self, query: str, only: Sequence[str] = []):
@@ -220,7 +222,7 @@ class SearchHandler(Handler):
                     raise IntentNotFoundError
 
         if selected != 0:
-            response = self._handle_add_to_playlist(selected)
+            response = await self._handle_add_to_playlist(selected)
 
         return response, False
 
@@ -291,7 +293,7 @@ class SearchHandler(Handler):
     def _aggregate_artists(self, artists: list[str]):
         return '' if len(artists) == 0 else aggregate(artists)
 
-    def _handle_add_to_playlist(self, position: int):
+    async def _handle_add_to_playlist(self, position: int):
         index = position - 1
         tracks = cast(list[Track] | None, self._state.get('search_results'))
         if not tracks:
@@ -299,7 +301,11 @@ class SearchHandler(Handler):
 
         track = tracks[index]
         artists = self._aggregate_artists(track.artists)
-        # todo: add song to playlist
+        await self._use_cases.add_tracks_to_playlist_use_case.execute(
+            self._user,
+            self.spotify_playlist_id,
+            [track.uri],
+        )
 
         self._state['followup_type'] = _FollowupType.AddMoreSongs
 
