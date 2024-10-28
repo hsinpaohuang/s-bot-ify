@@ -27,7 +27,10 @@ class Chatbot():
                 use_cases,
             ),
             PlaylistHandler.key: PlaylistHandler(
-                self._data.get(PlaylistHandler.key)
+                self._data.get(PlaylistHandler.key),
+                user,
+                playlist.spotify_playlist_id,
+                use_cases,
             ),
         }
 

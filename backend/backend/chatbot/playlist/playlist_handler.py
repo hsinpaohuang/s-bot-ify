@@ -11,6 +11,9 @@ from ..utils.aggregate import aggregate
 from ..utils.errors import IntentNotFoundError
 import numpy.typing as npt
 import numpy as np
+from utils.chatbot_use_cases import ChatbotUseCases
+from entities.user import UserEntity
+from dtos.track import Tracks
 
 class _FollowupType(str, Enum):
     RemoveFromPlaylist = 'RemoveFromPlaylist'
@@ -40,10 +43,19 @@ class PlaylistHandler(Handler):
         _IntentType.Fifth,
     ]
 
-    def __init__(self, state: dict[str, Any] | None):
+    def __init__(
+        self,
+        state: dict[str, Any] | None,
+        user: UserEntity,
+        spotify_playlist_id: str,
+        use_cases: ChatbotUseCases,
+    ):
         self._base_path = path.dirname(__file__)
         self._dataset, self._processor, self._doc_term_matrix = self._load_model()
         self._state = state or {}
+        self._user = user
+        self._spotify_playlist_id = spotify_playlist_id
+        self._use_cases = use_cases
 
     def match_intent(self, query: str, initial: bool = True):
         transformed = self._processor.transform(query)
@@ -75,7 +87,7 @@ class PlaylistHandler(Handler):
         index = cast(int, self._state['index'])
 
         if similarity >= self._min_no_confirmation_similarity:
-            return self._get_initial_response()
+            return await self._get_initial_response()
         elif similarity >= self._min_similarity:
             self._state['index'] = index
             self._state['from_confirmation'] = True
@@ -85,21 +97,21 @@ class PlaylistHandler(Handler):
 
         raise IntentNotFoundError
 
-    def generate_followup_response(self, query: str):
+    async def generate_followup_response(self, query: str):
         if self._state.get('from_confirmation'):
             if confirmation_classifier.predict(query):
-                response, is_finished = self._get_initial_response()
+                response, is_finished = await self._get_initial_response()
             else:
                 response = "My apologies for misunderstanding your query. Can you please rephrase it?"
                 is_finished = True
 
             del self._state['index'], self._state['similarity'], self._state['from_confirmation']
         else:
-            response, is_finished = self._get_followup_response(query)
+            response, is_finished = await self._get_followup_response(query)
 
         return response, is_finished
 
-    def _get_initial_response(self):
+    async def _get_initial_response(self):
         index = cast(int, self._state['index'])
         entry = self._dataset.iloc[index]
         followup_type = cast(str, entry['FollowupType'])
@@ -108,7 +120,7 @@ class PlaylistHandler(Handler):
         match followup_type:
             case _FollowupType.RemoveFromPlaylist:
                 self._state['page'] = 1
-                response, is_finished = self._realise_playlist()
+                response, is_finished = await self._realise_playlist()
             case _FollowupType.RemoveAll:
                 if True: # todo: if playlist length is 0
                     response = 'Your playlist is empty!'
@@ -122,7 +134,7 @@ class PlaylistHandler(Handler):
 
         return response, is_finished
 
-    def _get_followup_response(self, query: str):
+    async def _get_followup_response(self, query: str):
         match self._state.get('followup_type'):
             case _FollowupType.RemoveFromPlaylist:
                     return self._handle_remove_from_playlist(query)
@@ -157,10 +169,10 @@ class PlaylistHandler(Handler):
                     return 'You are already at the first page', False
 
                 self._state['page'] = page - 1
-                return self._realise_playlist()
+                return await self._realise_playlist()
             case _IntentType.NextPage:
                 self._state['page'] = page + 1
-                return self._realise_playlist()
+                return await self._realise_playlist()
             case _:
                 raise IntentNotFoundError
 
@@ -191,13 +203,16 @@ class PlaylistHandler(Handler):
 
         return dataset, processor, doc_term_matrix
 
-    def _realise_playlist(self) -> tuple[str, bool]:
+    async def _realise_playlist(self) -> tuple[str, bool]:
         page = cast(int, self._state.get('page', 1))
         start = (page - 1) * 5
-        end = start + 5
-        playlist = list() # todo: playlist = playlist[start:end]
+        playlist = await self \
+            ._use_cases\
+            .get_spotify_tracks_of_playlist_use_case \
+            .execute(self._user, self._spotify_playlist_id, start)
+        self._state['tracks'] = playlist.model_dump()
 
-        if len(playlist) == 0:
+        if len(playlist.tracks) == 0:
             if page == 1:
                 return "Your playlist is empty! Let's start by searching for a song to add to it!", True
             else:
@@ -205,11 +220,12 @@ class PlaylistHandler(Handler):
 
         response = f'Here is page {page} of your playlist: \n'
 
-        for index, song in enumerate(playlist):
-            artists = self._aggregate_artists(song['artists'])
-            response += f'{index + 1}.\n{song["name"]} by {artists}\n{song["url"]}\n\n'
+        for index, song in enumerate(playlist.tracks):
+            artists = self._aggregate_artists(song.artists)
+            response += f'{index + 1}.\n{song.name} by {artists}\n\n'
+            # todo: song url
 
-        if len(playlist) < 5:
+        if len(playlist.tracks) < 5:
             response += "You've reached the end of your playlist.\n"
             if page != 1:
                 response += 'You can navigate your playlist with "previous page"\n'
@@ -253,12 +269,11 @@ class PlaylistHandler(Handler):
                 case _:
                     raise IntentNotFoundError
 
-        page = cast(int, self._state['page'])
-        index = (page - 1) * 5 + int(selected) - 1
-        song = {} # todo: song = remove playlist from song at index
+        tracks = Tracks.model_validate(self._state['tracks'])
+        song = tracks.tracks[selected - 1]
 
-        artists = self._aggregate_artists(song['artists'])
-        response = f'Done! {song["name"]} by {artists} has been removed from your playlist.'
+        artists = self._aggregate_artists(song.artists)
+        response = f'Done! {song.name} by {artists} has been removed from your playlist.'
 
         return response, True
 
