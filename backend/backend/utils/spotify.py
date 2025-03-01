@@ -73,13 +73,13 @@ class SpotifyAPI():
         async with session.post(
             f'{self._SPOTIFY_API_V1_URL}/{parsed_path}',
             headers=self._header,
-            data=data,
+            json=data,
         ) as resp:
             result = await resp.json()
 
             if not resp.ok:
                 raise RuntimeError(
-                    f'Failed to get {path}: {result['error']['message']}',
+                    f'Failed to post {path}: {result['error']['message']}',
                 )
 
             if result_model:

@@ -76,11 +76,8 @@
   class="flex flex-col gap-4 flex-1 overflow-y-auto px-3 py-6"
 >
   {#await fetching}
-    {#each placeholders as { bot }}
-      <PlaceholderMessage {bot} />
-    {/each}
-  {:then _}
     <LoadPrevChat />
+  {:then _}
 
     {#each chatFeed as message}
       <ChatMessage {message} />

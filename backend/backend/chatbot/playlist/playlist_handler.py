@@ -270,7 +270,7 @@ class PlaylistHandler(Handler):
                     raise IntentNotFoundError
 
         tracks = Tracks.model_validate(self._state['tracks'])
-        song = tracks.tracks[selected - 1]
+        song = tracks.tracks[selected - 1] # todo: remove song from playlist
 
         artists = self._aggregate_artists(song.artists)
         response = f'Done! {song.name} by {artists} has been removed from your playlist.'

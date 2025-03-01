@@ -48,18 +48,28 @@ class PlaylistsStore extends SpotifyPaginatedStore<State> {
       params.append('offset', String(this.offset));
     }
 
-    const res = await authedFetch<GetPlaylistResponse>(`/playlists?${params}`);
-    if (!res || !res.ok || !res.data) {
-      throw new Error('Failed to fetch playlists');
+    try {
+      const res = await authedFetch<GetPlaylistResponse>(`/playlists?${params}`);
+      if (!res || !res.ok || !res.data) {
+        throw new Error('Failed to fetch playlists');
+      }
+
+      const { hasMore, offset, playlists } = res.data;
+
+      this.offset = offset + playlists.length;
+      this.store.update(({ playlists: statePlaylist }) => ({
+        playlists: statePlaylist.concat(playlists),
+        hasMore,
+      }));
+    } catch (e) {
+      this.store.update(state => {
+        state.hasMore = false;
+        return state;
+      });
+
+      throw e;
     }
 
-    const { hasMore, offset, playlists } = res.data;
-
-    this.offset = offset + playlists.length;
-    this.store.update(({ playlists: statePlaylist }) => ({
-      playlists: statePlaylist.concat(playlists),
-      hasMore,
-    }));
   }
 }
 

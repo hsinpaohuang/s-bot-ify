@@ -130,7 +130,9 @@ async def send_message(
     playlist = await get_playlist_use_case.execute(playlist_id, user)
     chat_bot = Chatbot(playlist, user, chat_bot_use_cases)
 
-    _, response = gather(
+    message.content = message.content.strip()
+
+    _, response = await gather(
         send_message_use_case.execute(playlist, message),
         chat_bot.respond(message.content),
     )

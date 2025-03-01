@@ -13,7 +13,7 @@ import numpy.typing as npt
 import numpy as np
 from utils.chatbot_use_cases import ChatbotUseCases
 from entities.user import UserEntity
-from dtos.track import Track
+from dtos.track import Track, Tracks
 
 class _FollowupType(str, Enum):
     InitSearch = 'InitSearch'
@@ -165,13 +165,19 @@ class SearchHandler(Handler):
                 self._state['search_type'] = cast(_FollowupType, self._state['followup_type'])
 
                 entry = self._dataset[self._dataset['FollowupType'] == _FollowupType.AddArtists]
-                self._state['index'] = cast(int, entry.index[0])
+                self._state['index'] = int(cast(np.int64, entry.index[0]))
                 return self._get_initial_response(), False
             case _FollowupType.AddArtists:
                 self._state['artists'] = query
                 self._state['page'] = 1
                 del self._state['followup_type']
                 return await self._handle_search(), False
+            case _FollowupType.AddMoreSongs:
+                if not confirmation_classifier.predict(query):
+                    return 'Ok.', True
+
+                tracks = Tracks.model_validate(self._state['search_results']).tracks
+                return self._realise_search_results(tracks), False
             case _:
                 pass
 
@@ -257,8 +263,8 @@ class SearchHandler(Handler):
             artists,
             page,
         )
-        self._state['search_results'] = search_results.as_tracks.tracks
-        return self._realise_search_results(self._state['search_results'])
+        self._state['search_results'] = search_results.as_tracks.model_dump()
+        return self._realise_search_results(search_results.as_tracks.tracks)
 
     def _realise_search_results(self, results: list[Track]):
         page = cast(int, self._state['page'])
@@ -294,13 +300,13 @@ class SearchHandler(Handler):
         return '' if len(artists) == 0 else aggregate(artists)
 
     async def _handle_add_to_playlist(self, position: int):
-        index = position - 1
-        tracks = cast(list[Track] | None, self._state.get('search_results'))
-        if not tracks:
+        if 'search_results' not in self._state:
             raise IntentNotFoundError
 
+        tracks = Tracks.model_validate(self._state['search_results']).tracks
+        index = position - 1
         track = tracks[index]
-        artists = self._aggregate_artists(track.artists)
+
         await self._use_cases.add_tracks_to_playlist_use_case.execute(
             self._user,
             self.spotify_playlist_id,
@@ -309,6 +315,7 @@ class SearchHandler(Handler):
 
         self._state['followup_type'] = _FollowupType.AddMoreSongs
 
+        artists = self._aggregate_artists(track.artists)
         response = f'Done! {track.name} by {artists} has been added to your playlist.\n'
         response += 'Would you like to add more from the current search results?'
 

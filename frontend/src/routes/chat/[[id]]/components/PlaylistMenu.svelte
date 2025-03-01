@@ -18,14 +18,6 @@
     hasMore = state.hasMore;
   });
 
-  async function fetchNext(e: CustomEvent<boolean>) {
-    if (!e.detail) {
-      return;
-    }
-
-    await tracksStore.fetchNext();
-  }
-
   $: id = $page.params.id;
   $: {
     tracksStore.id = $page.params.id;
@@ -68,7 +60,7 @@
               {track.name}
             </dt>
             <dd class="text-sm opacity-50 text-ellipsis whitespace-nowrap overflow-x-hidden">
-              {track.artists}
+              {track.artists.join(' • ')}
             </dd>
           </span>
         </div>
@@ -76,7 +68,7 @@
       {#if hasMore}
         <div
           use:intersectionObserver
-          on:intersect={fetchNext}
+          on:intersect={() => tracksStore.fetchNext()}
         />
         {#each placeholders as _}
           <div class="w-full">

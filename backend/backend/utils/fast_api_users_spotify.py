@@ -31,7 +31,12 @@ oauth_client = _SpotifyOAuth(
      authorize_endpoint='https://accounts.spotify.com/authorize',
      access_token_endpoint='https://accounts.spotify.com/api/token',
      refresh_token_endpoint='https://accounts.spotify.com/api/token',
-     base_scopes=['user-read-email', 'playlist-read-private'],
+     base_scopes=[
+        'user-read-email',
+        'playlist-read-private',
+        'playlist-modify-public',
+        'playlist-modify-private',
+    ],
 )
 
 class _UserManager(ObjectIDIDMixin, BaseUserManager[UserEntity, PydanticObjectId]):

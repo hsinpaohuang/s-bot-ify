@@ -129,18 +129,29 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<Message[]>(`/playlists/${id}/chat`);
-    if (!res || !res.ok || !res.data) {
-      throw new Error('Failed to fetch Chat history');
-    }
+    try {
+      const res = await authedFetch<Message[]>(`/playlists/${id}/chat`);
+      if (!res || !res.ok || !res.data) {
+        throw new Error('Failed to fetch Chat history');
+      }
 
-    this.store.update(({ isSending }) => ({
-      messages: res.data,
-      isSending,
-      hasMore: history.length !== 0,
-      isFetching: false,
-      lastAddedMsgPos: 'bottom',
-    }));
+      this.store.update(({ isSending }) => ({
+        messages: res.data,
+        isSending,
+        hasMore: res.data.length > 0,
+        isFetching: false,
+        lastAddedMsgPos: 'bottom',
+      }));
+    } catch (e) {
+      this.store.update(state => ({
+        ...state,
+        isSending: false,
+        hasMore: false,
+        isFetching: false,
+      }));
+
+      throw e;
+    }
   }
 
   async fetchPrevious() {
@@ -156,24 +167,34 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<Message[]>(`/playlists/${this.id}/chat?${params}`);
-    if (!res || !res.ok || !res.data) {
-      throw new Error('Failed to fetch Chat history');
+    try {
+      const res = await authedFetch<Message[]>(`/playlists/${this.id}/chat?${params}`);
+      if (!res || !res.ok || !res.data) {
+        throw new Error('Failed to fetch Chat history');
+      }
+
+      this.store.update(state => {
+        state.messages = res.data.concat(state.messages);
+        state.hasMore = res.data.length !== 0;
+        state.lastAddedMsgPos = 'top';
+        return state;
+      });
+
+      await sleep(500);
+
+      this.store.update(state => {
+        state.isFetching = false;
+        return state;
+      });
+    } catch (e) {
+      this.store.update(state => {
+        state.hasMore = false;
+        state.isFetching = false;
+        return state;
+      });
+
+      throw e;
     }
-
-    this.store.update(state => {
-      state.messages = res.data.concat(state.messages);
-      state.hasMore = history.length !== 0;
-      state.lastAddedMsgPos = 'top';
-      return state;
-    });
-
-    await sleep(500);
-
-    this.store.update(state => {
-      state.isFetching = false;
-      return state;
-    });
   }
 
   async send(message: string) {
@@ -197,20 +218,29 @@ class ChatFeedStore {
       return state;
     });
 
-    const res = await authedFetch<Message>(`/playlists/${this.id}/chat`, {
-      method: 'POST',
-      body: JSON.stringify({ content: message }),
-    });
+    try {
+      const res = await authedFetch<Message>(`/playlists/${this.id}/chat`, {
+        method: 'POST',
+        body: JSON.stringify({ content: message }),
+      });
 
-    if (!res?.ok || !res.data) {
-      throw new Error('Failed to fetch Chat history');
+      if (!res?.ok || !res.data) {
+        throw new Error('Failed to fetch Chat history');
+      }
+
+      this.store.update(state => {
+        state.messages.push(res.data);
+        state.isSending = false;
+        return state;
+      });
+    } catch (e) {
+      this.store.update(state => {
+        state.isSending = false;
+        return state;
+      });
+
+      throw e;
     }
-
-    this.store.update(state => {
-      state.messages.push(res.data);
-      state.isSending = false;
-      return state;
-    });
   }
 }
 

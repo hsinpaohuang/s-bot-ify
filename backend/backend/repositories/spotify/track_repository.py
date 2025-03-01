@@ -1,5 +1,4 @@
 from typing import Literal
-from urllib.parse import quote
 from entities.user import UserEntity
 from dtos.track import SpotifyTracks, SpotifySearchResult
 from utils.spotify import SpotifyAPI
@@ -14,7 +13,7 @@ class SpotifyTrackRepository():
         params = {
             'offset': str(offset),
             'limit': '20',
-            'fields': 'next,offset,items(track(id,name,artists(name),album(images)))',
+            'fields': 'next,offset,items(track(id,uri,name,artists(name),album(images)))',
         }
 
         return await SpotifyAPI(user).get(
@@ -42,7 +41,7 @@ class SpotifyTrackRepository():
             search_query += f' artist:{artist}'
 
         search_params = {
-            'q': quote(search_query),
+            'q': search_query,
             'type': 'track',
             'limit': '5',
         }

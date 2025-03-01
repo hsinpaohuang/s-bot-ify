@@ -9,7 +9,7 @@ import { authedFetch } from "$lib/utils/fetchWrappers";
 export type Track = {
   id: string;
   name: string;
-  artists: string;
+  artists: string[];
   icon: string;
 }
 
@@ -58,20 +58,26 @@ class TracksStore extends SpotifyPaginatedStore<State> {
       params.append('offset', String(this.offset));
     }
 
-    const res = await authedFetch<GetTracksReponse>(
-      `/playlists/${this._id}/tracks?${params}`,
-    );
-    if (!res || !res.ok || !res.data) {
-      throw new Error('Failed to fetch playlists');
+    try {
+      const res = await authedFetch<GetTracksReponse>(
+        `/playlists/${this._id}/tracks?${params}`,
+      );
+      if (!res || !res.ok || !res.data) {
+        this.store.update(state => ({ ...state, hasMore: false }));
+        throw new Error('Failed to fetch playlists');
+      }
+      const { hasMore, offset, tracks } = res.data;
+
+      this.offset = offset + tracks.length;
+      this.store.update(({ tracks: stateTracks }) => ({
+        tracks: stateTracks.concat(tracks),
+        hasMore,
+      }));
+    } catch (e) {
+      this.store.update(state => ({ ...state, hasMore: false }));
+
+      throw e;
     }
-
-    const { hasMore, offset, tracks } = res.data;
-
-    this.offset = offset + tracks.length;
-    this.store.update(({ tracks: stateTracks }) => ({
-      tracks: stateTracks.concat(tracks),
-      hasMore,
-    }));
   }
 
   private resetState() {

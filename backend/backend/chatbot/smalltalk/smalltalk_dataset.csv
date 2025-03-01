@@ -12,4 +12,3 @@ QuestionID,Question,Response,IntentType
 I can help you add songs to your playlist by searching. Try ""I want to search a song"".
 I can help you remove songs from your playlist. Try ""I want to remove a song"".
 I can also help you remove all songs from your playlist. Try ""I want to remove all songs from my playlist"".
-To quit, enter ""STOP""",Help
