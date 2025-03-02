@@ -2,6 +2,7 @@ from typing import Annotated
 from asyncio import gather
 from fastapi import APIRouter, Depends
 from dtos.chat import NewMessage, ChatMessage
+from entities.playlist import ChatHistory
 from repositories.playlist import PlaylistRepository
 from repositories.playlist.beanie_playlist_repository import (
     BeaniePlaylistRepository
@@ -131,22 +132,26 @@ async def send_message(
     chat_bot = Chatbot(playlist, user, chat_bot_use_cases)
 
     message.content = message.content.strip()
+    try:
+        _, response = await gather(
+            send_message_use_case.execute(playlist, message),
+            chat_bot.respond(message.content),
+        )
 
-    _, response = await gather(
-        send_message_use_case.execute(playlist, message),
-        chat_bot.respond(message.content),
-    )
-
-    response_message, _ = await gather(
-        send_message_use_case.execute(
-            playlist,
-            NewMessage(content=response),
-            is_bot=True,
-        ),
-        save_chat_state_of_playlist_use_case.execute(
-            playlist,
-            chat_bot.export_data(),
-        ),
-    )
+        response_message, _ = await gather(
+            send_message_use_case.execute(
+                playlist,
+                NewMessage(content=response),
+                is_bot=True,
+            ),
+            save_chat_state_of_playlist_use_case.execute(
+                playlist,
+                chat_bot.export_data(),
+            ),
+        )
+    except:
+        error_message = 'Sorry, an error occurred while responding to your message.\n'
+        error_message += 'Please try again later.'
+        response_message = ChatHistory(content=error_message, bot=True)
 
     return ChatMessage.from_chat_history(response_message)

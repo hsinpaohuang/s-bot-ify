@@ -8,6 +8,8 @@ from utils.chatbot_use_cases import ChatbotUseCasesDep
 from entities.user import UserEntity
 from entities.playlist import PlaylistEntity
 
+_STOP_KEY_WORDS = { 'CANCEL', 'STOP' }
+
 class Chatbot():
     def __init__(
         self,
@@ -37,9 +39,10 @@ class Chatbot():
     async def respond(self, query: str):
         try:
             if self._previous_key:
-                if query == 'CANCEL' or query == 'STOP':
+                if query.upper() in _STOP_KEY_WORDS:
                     self._previous_key = None
                     self._is_finished = True
+                    del self._data[self._key]
                     return 'Your request has been cancelled.'
 
                 response, self._is_finished = await self \
