@@ -1,8 +1,10 @@
+from typing import Optional
 from pydantic import BaseModel, Field, computed_field
 
 class SpotifyPaginated[T: BaseModel](BaseModel):
     next: str | None = Field(...)
     offset: int
+    total: int
     items: list[T]
 
     @computed_field
@@ -14,3 +16,4 @@ class SpotifyPaginated[T: BaseModel](BaseModel):
 class Paginated(BaseModel):
     has_more: bool
     offset: int
+    total: Optional[int]

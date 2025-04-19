@@ -1,4 +1,4 @@
-from typing import Type, overload, Any
+from typing import Type, overload, Any, Mapping, Literal
 from pydantic import BaseModel
 from entities.user import UserEntity
 from utils.aiohttp_session import session
@@ -6,6 +6,7 @@ from repositories.user.beanie_user_repository import BeanieUserRepository
 from use_cases.user.update_access_token_use_case import UpdateAccessTokenUseCase
 from dtos.spotify_token import SpotifyToken
 
+type Fields = Mapping[str, Fields | Literal[True]]
 class SpotifyAPI():
     _SPOTIFY_API_V1_URL = 'https://api.spotify.com'
     _SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
@@ -125,3 +126,15 @@ class SpotifyAPI():
     @property
     def _header(self):
         return { 'Authorization': f'Bearer {self._access_token}' }
+
+
+    @staticmethod
+    def convert_fields(fields: Fields) -> str:
+        output = list[str]()
+        for k, v in fields.items():
+            if v == True:
+                output.append(k)
+            else:
+                output.append(f'{k}({SpotifyAPI.convert_fields(v)})')
+
+        return ','.join(output)

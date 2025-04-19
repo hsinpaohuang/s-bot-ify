@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from repositories.spotify.playlist_repository import SpotifyPlaylistRepository
 from repositories.spotify.track_repository import SpotifyTrackRepository
-from use_cases.playlist.get_spotify_playlists import GetSpotifyPlaylistsUseCase
+from use_cases.playlist.get_spotify_playlists_of_user import GetSpotifyPlaylistsOfUserUseCase
 from use_cases.playlist.get_spotify_tracks_of_playlist import (
     GetSpotifyTracksOfPlaylistUseCase,
 )
@@ -30,14 +30,14 @@ _TrackRepoDep = Annotated[
 
 # init use cases
 
-def _init_get_spotity_playlists_use_case(
+def _init_get_spotity_playlists_of_user_use_case(
     spotify_playlist_repo: _SpotifyPlaylistRepoDep,
 ):
-    return GetSpotifyPlaylistsUseCase(spotify_playlist_repo)
+    return GetSpotifyPlaylistsOfUserUseCase(spotify_playlist_repo)
 
-_GetSpotifyPlaylistsUseCaseDep = Annotated[
-    GetSpotifyPlaylistsUseCase,
-    Depends(_init_get_spotity_playlists_use_case),
+_GetSpotifyPlaylistsOfUserUseCaseDep = Annotated[
+    GetSpotifyPlaylistsOfUserUseCase,
+    Depends(_init_get_spotity_playlists_of_user_use_case),
 ]
 
 def _init_get_spotify_tracks_of_playlist_use_case(
@@ -60,10 +60,10 @@ router = APIRouter(
 @router.get('', response_model=Playlists)
 async def get_playlists(
     user: CurrentActiveUserDep,
-    get_spotify_playlists_use_case: _GetSpotifyPlaylistsUseCaseDep,
+    get_spotify_playlists_of_user_use_case: _GetSpotifyPlaylistsOfUserUseCaseDep,
     offset: int = 0,
 ):
-    return await get_spotify_playlists_use_case.execute(user, offset)
+    return await get_spotify_playlists_of_user_use_case.execute(user, offset)
 
 @router.get('/{playlist_id}/tracks', response_model=Tracks, tags=['tracks'])
 async def get_tracks_of_playlist(
