@@ -122,10 +122,12 @@ class PlaylistHandler(Handler):
                 self._state['page'] = 1
                 response, is_finished = await self._realise_playlist()
             case _FollowupType.RemoveAll:
-                if True: # todo: if playlist length is 0
+                tracks = await self._fetch_playlist_tracks(start=0)
+                if len(tracks.tracks) == 0:
                     response = 'Your playlist is empty!'
                     is_finished = True
                 else:
+                    self._state['playlist_length'] = tracks.total
                     response = 'Do you really want to remove all songs from your playlist?'
                     is_finished = False
             case _:
@@ -203,14 +205,17 @@ class PlaylistHandler(Handler):
 
         return dataset, processor, doc_term_matrix
 
+    async def _fetch_playlist_tracks(self, start: int = 0):
+        tracks = await self._use_cases\
+            .get_spotify_tracks_of_playlist_use_case \
+            .execute(self._user, self._spotify_playlist_id, offset=start)
+        self._state['tracks'] = tracks.model_dump()
+        return tracks
+
     async def _realise_playlist(self) -> tuple[str, bool]:
         page = cast(int, self._state.get('page', 1))
         start = (page - 1) * 5
-        playlist = await self \
-            ._use_cases\
-            .get_spotify_tracks_of_playlist_use_case \
-            .execute(self._user, self._spotify_playlist_id, start)
-        self._state['tracks'] = playlist.model_dump()
+        playlist = await self._fetch_playlist_tracks(start)
 
         if len(playlist.tracks) == 0:
             if page == 1:

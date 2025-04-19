@@ -13,7 +13,7 @@ class SpotifyTrackRepository():
         params = {
             'offset': str(offset),
             'limit': '20',
-            'fields': 'next,offset,items(track(id,uri,name,artists(name),album(images)))',
+            'fields': 'next,offset,total,items(track(id,uri,name,artists(name),album(images)))',
         }
 
         return await SpotifyAPI(user).get(

@@ -24,7 +24,7 @@ class SpotifyTrackItem(BaseModel):
 class SpotifyTracks(SpotifyPaginated[SpotifyTrackItem], BaseModel):
     @property
     def as_tracks(self):
-        output = self.model_dump(include={ 'has_more', 'offset' })
+        output = self.model_dump(include={ 'has_more', 'offset', 'total' })
         output['tracks'] = [track.track.as_track for track in self.items]
 
         return Tracks.model_validate(output)

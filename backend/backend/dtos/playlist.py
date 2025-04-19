@@ -16,8 +16,8 @@ class SpotifyPlaylists(SpotifyPaginated[SpotifyPlaylist], BaseModel):
     def editable_playlists(self, user_id: str):
         return [item for item in self.items if item.owner.id == user_id]
 
-    def to_playlist(self, user_id: str):
-        output = self.model_dump(include={ 'offset', 'has_more' })
+    def to_playlists(self, user_id: str):
+        output = self.model_dump(include={ 'offset', 'has_more', 'total' })
         output['playlists'] = [
             Playlist.model_validate(
                 item.model_dump(include={ 'id', 'icon', 'name' }),
